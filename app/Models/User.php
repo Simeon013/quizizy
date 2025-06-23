@@ -40,6 +40,22 @@ class User extends Authenticatable
     ];
 
     /**
+     * Get the quiz sessions for the user.
+     */
+    public function quizSessions()
+    {
+        return $this->hasMany(QuizSession::class);
+    }
+
+    /**
+     * Get the user's statistics.
+     */
+    public function stat()
+    {
+        return $this->hasOne(UserStat::class);
+    }
+
+    /**
      * Get the attributes that should be cast.
      *
      * @return array<string, string>
