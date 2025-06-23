@@ -3,7 +3,6 @@
 namespace Database\Seeders;
 
 use App\Models\User;
-// use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 
@@ -14,13 +13,20 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory(10)->create();
-
-        User::factory()->create([
+        // Création de l'administrateur
+        User::create([
             'name' => 'Admin',
             'email' => 'admin@admin.com',
             'password' => Hash::make('password'),
-            // 'role' => 'admin'
+            // 'is_admin' => true,
+            // 'total_xp' => 0,
+            // 'level' => 1,
+        ]);
+
+        // Exécution des seeders
+        $this->call([
+            CategorySeeder::class,
+            QuestionSeeder::class,
         ]);
     }
 }
