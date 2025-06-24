@@ -1,331 +1,450 @@
-<script setup>
+<script setup lang="ts">
 import { Link, usePage } from '@inertiajs/vue3';
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, onMounted, onUnmounted, computed } from 'vue';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import {
+  Menu,
+  LogOut,
+  Moon,
+  Sun,
+  Bell,
+  X,
+  Users,
+  BarChart2,
+  LayoutDashboard,
+  Folder,
+  HelpCircle,
+  Settings,
+  User as UserIcon
+} from 'lucide-vue-next';
 
 const sidebarOpen = ref(false);
-const profileMenuOpen = ref(false);
 const page = usePage();
 
-const navigation = [
-    {
-        name: 'Tableau de bord',
-        href: route('admin.dashboard'),
-        icon: 'tachometer-alt',
-        active: ['admin/dashboard']
-    },
-    {
-        name: 'Catégories',
-        href: route('admin.categories.index'),
-        icon: 'folder',
-        active: ['admin/categories']
-    },
-    {
-        name: 'Questions',
-        href: '#',
-        icon: 'question-circle',
-        active: ['admin/questions']
-    },
-    {
-        name: 'Utilisateurs',
-        href: '#',
-        icon: 'users',
-        active: ['admin/users']
-    },
-    {
-        name: 'Statistiques',
-        href: '#',
-        icon: 'chart-bar',
-        active: ['admin/stats']
-    },
-];
+// Types pour les éléments de navigation
+interface NavItem {
+  name: string;
+  href: string;
+  icon: any; // Type plus précis pourrait être défini si nécessaire
+  active: string[];
+}
 
-const userNavigation = [
-    { name: 'Votre profil', href: '#', icon: 'user' },
-    { name: 'Paramètres', href: '#', icon: 'cog' },
-    { name: 'Déconnexion', href: route('logout'), method: 'post', icon: 'sign-out-alt' },
+// Navigation principale
+const navigation: NavItem[] = [
+  {
+    name: 'Tableau de bord',
+    href: route('admin.dashboard'),
+    icon: LayoutDashboard,
+    active: ['admin/dashboard']
+  },
+  {
+    name: 'Catégories',
+    href: route('admin.categories.index'),
+    icon: Folder,
+    active: ['admin/categories']
+  },
+  {
+    name: 'Questions',
+    href: '#',
+    icon: HelpCircle,
+    active: ['admin/questions']
+  },
+  {
+    name: 'Utilisateurs',
+    href: '#',
+    icon: Users,
+    active: ['admin/users']
+  },
+  {
+    name: 'Statistiques',
+    href: '#',
+    icon: BarChart2,
+    active: ['admin/stats']
+  },
 ];
 
 // Vérifier si un élément de menu est actif
-const isActive = (menuItem) => {
-    if (!menuItem.active) return false;
-    return menuItem.active.some(path => page.url.startsWith('/' + path));
-};
-
-// Gérer la fermeture du menu profil en cliquant à l'extérieur
-const handleClickOutside = (event) => {
-    const profileMenu = document.getElementById('profile-menu');
-    if (profileMenu && !profileMenu.contains(event.target)) {
-        profileMenuOpen.value = false;
-    }
-};
-
-// Gérer le redimensionnement de la fenêtre
-const handleResize = () => {
-    if (window.innerWidth >= 1024) {
-        sidebarOpen.value = false;
-    }
+const isActive = (menuItem: NavItem): boolean => {
+  if (!menuItem.active?.length) return false;
+  return menuItem.active.some((path: string) => page.url.startsWith(`/${path}`));
 };
 
 // Fermer le menu latéral lors du changement de page
 const closeSidebar = () => {
-    if (window.innerWidth < 1024) {
-        sidebarOpen.value = false;
-    }
+  if (window.innerWidth < 1024) {
+    sidebarOpen.value = false;
+  }
 };
 
-onMounted(() => {
-    document.addEventListener('click', handleClickOutside);
-    window.addEventListener('resize', handleResize);
+const userInitials = computed((): string => {
+  if (!page.props.auth?.user?.name) return 'U';
+  return page.props.auth.user.name
+    .split(' ')
+    .map((n: string) => n[0])
+    .join('')
+    .toUpperCase();
 });
 
-onUnmounted(() => {
-    document.removeEventListener('click', handleClickOutside);
-    window.removeEventListener('resize', handleResize);
+// Gestion du redimensionnement de la fenêtre
+const handleResize = (): void => {
+  if (window.innerWidth >= 1024) {
+    sidebarOpen.value = false;
+  }
+};
+
+// Gestion du thème
+const theme = ref<string>('light');
+
+const toggleTheme = (): void => {
+  theme.value = theme.value === 'light' ? 'dark' : 'light';
+  document.documentElement.classList.toggle('dark', theme.value === 'dark');
+  localStorage.setItem('theme', theme.value);};
+
+// Appliquer le thème au chargement
+onMounted((): void => {
+  // Appliquer le thème sauvegardé ou détecter la préférence système
+  const savedTheme = localStorage.getItem('theme');
+  const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+  theme.value = savedTheme || (systemPrefersDark ? 'dark' : 'light');
+  document.documentElement.classList.toggle('dark', theme.value === 'dark');
+
+  // Gestion du redimensionnement
+  window.addEventListener('resize', handleResize);
+  handleResize();
+});
+
+// Nettoyage des écouteurs d'événements
+onUnmounted((): void => {
+  window.removeEventListener('resize', handleResize);
 });
 </script>
 
 <template>
-    <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
-        <!-- Barre de navigation supérieure -->
-        <header class="bg-white dark:bg-gray-800 shadow-sm z-20">
-            <div class="px-4 sm:px-6 lg:px-8">
-                <div class="flex justify-between h-16">
-                    <!-- Logo et bouton menu mobile -->
-                    <div class="flex items-center">
-                        <button
-                            @click="sidebarOpen = !sidebarOpen"
-                            class="lg:hidden mr-2 p-2 text-gray-500 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500 rounded-md"
-                            aria-label="Ouvrir le menu"
-                        >
-                            <i class="fas fa-bars h-5 w-5"></i>
-                        </button>
-                        <Link :href="route('admin.dashboard')" class="flex-shrink-0 flex items-center">
-                            <span class="text-xl font-bold text-gray-900 dark:text-white">Quizizy Admin</span>
-                        </Link>
-                    </div>
-
-                    <!-- Barre de recherche et profil -->
-                    <div class="flex items-center">
-                        <!-- Barre de recherche (masquée sur mobile) -->
-                        <div class="hidden md:block relative mx-4">
-                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <i class="fas fa-search text-gray-400"></i>
-                            </div>
-                            <input
-                                type="text"
-                                class="block w-64 pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white"
-                                placeholder="Rechercher..."
-                            >
-                        </div>
-
-                        <!-- Menu utilisateur -->
-                        <div class="ml-4 relative" id="profile-menu">
-                            <button
-                                @click="profileMenuOpen = !profileMenuOpen"
-                                class="max-w-xs flex items-center text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                                id="user-menu"
-                                aria-expanded="false"
-                                aria-haspopup="true"
-                            >
-                                <span class="sr-only">Ouvrir le menu utilisateur</span>
-                                <div class="h-8 w-8 rounded-full bg-blue-500 flex items-center justify-center text-white font-semibold">
-                                    {{ $page.props.auth?.user?.name?.charAt(0) || 'U' }}
-                                </div>
-                                <span class="hidden md:inline-block ml-2 text-sm font-medium text-gray-700 dark:text-gray-200">
-                                    {{ $page.props.auth?.user?.name || 'Utilisateur' }}
-                                </span>
-                                <i class="fas fa-chevron-down ml-1 text-gray-400 text-xs"></i>
-                            </button>
-
-                            <!-- Menu déroulant utilisateur -->
-                            <transition
-                                enter-active-class="transition ease-out duration-100"
-                                enter-from-class="transform opacity-0 scale-95"
-                                enter-to-class="transform opacity-100 scale-100"
-                                leave-active-class="transition ease-in duration-75"
-                                leave-from-class="transform opacity-100 scale-100"
-                                leave-to-class="transform opacity-0 scale-95"
-                            >
-                                <div
-                                    v-show="profileMenuOpen"
-                                    class="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg py-1 bg-white dark:bg-gray-800 ring-1 ring-black ring-opacity-5 focus:outline-none z-50"
-                                    role="menu"
-                                    aria-orientation="vertical"
-                                    aria-labelledby="user-menu"
-                                >
-                                    <Link
-                                        v-for="(item, index) in userNavigation"
-                                        :key="index"
-                                        :href="item.href"
-                                        :method="item.method"
-                                        as="button"
-                                        class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
-                                        :class="{ 'border-t border-gray-200 dark:border-gray-700 mt-1 pt-2': index === userNavigation.length - 2 }"
-                                        role="menuitem"
-                                        @click="profileMenuOpen = false"
-                                    >
-                                        <i v-if="item.icon" :class="`fas fa-${item.icon} mr-2 w-4 text-center`"></i>
-                                        {{ item.name }}
-                                    </Link>
-                                </div>
-                            </transition>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </header>
-
-        <!-- Conteneur principal -->
-        <div class="flex-1 flex overflow-hidden">
-            <!-- Barre latérale -->
-            <div
-                class="fixed inset-y-0 left-0 z-30 w-64 transform lg:translate-x-0 bg-white dark:bg-gray-800 shadow-lg transition duration-200 ease-in-out"
-                :class="{
-                    'translate-x-0': sidebarOpen,
-                    '-translate-x-full': !sidebarOpen,
-                    'lg:translate-x-0': true
-                }"
-            >
-                <div class="flex-1 flex flex-col h-0 pt-5 pb-4 overflow-y-auto">
-                    <!-- Logo et bouton de fermeture (mobile) -->
-                    <div class="flex items-center justify-between px-4 mb-5">
-                        <div class="flex-shrink-0 flex items-center">
-                            <span class="text-xl font-bold text-gray-900 dark:text-white">Menu</span>
-                        </div>
-                        <button
-                            @click="sidebarOpen = false"
-                            class="lg:hidden p-2 rounded-md text-gray-500 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none"
-                        >
-                            <i class="fas fa-times h-5 w-5"></i>
-                        </button>
-                    </div>
-
-                    <!-- Navigation -->
-                    <nav class="px-2 space-y-1">
-                        <Link
-                            v-for="item in navigation"
-                            :key="item.name"
-                            :href="item.href"
-                            @click="closeSidebar"
-                            class="group flex items-center px-3 py-3 text-sm font-medium rounded-md transition-colors duration-150"
-                            :class="{
-                                'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300': isActive(item),
-                                'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700': !isActive(item)
-                            }"
-                        >
-                            <i
-                                :class="[
-                                    `fas fa-${item.icon} mr-3 flex-shrink-0 h-5 w-5 text-center`,
-                                    isActive(item)
-                                        ? 'text-blue-600 dark:text-blue-400'
-                                        : 'text-gray-400 group-hover:text-gray-500 dark:text-gray-500 dark:group-hover:text-gray-400'
-                                ]"
-                            ></i>
-                            <span class="truncate">{{ item.name }}</span>
-                            <span
-                                v-if="isActive(item)"
-                                class="ml-auto h-2 w-2 rounded-full bg-blue-500"
-                            ></span>
-                        </Link>
-                    </nav>
-
-                    <!-- Informations utilisateur (mobile) -->
-                    <div class="mt-auto pt-4 border-t border-gray-200 dark:border-gray-700 px-4">
-                        <div class="flex items-center">
-                            <div class="h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                                <span class="text-blue-600 dark:text-blue-400 font-medium">
-                                    {{ $page.props.auth?.user?.name?.charAt(0) || 'U' }}
-                                </span>
-                            </div>
-                            <div class="ml-3">
-                                <p class="text-sm font-medium text-gray-700 dark:text-gray-200">
-                                    {{ $page.props.auth?.user?.name || 'Utilisateur' }}
-                                </p>
-                                <p class="text-xs text-gray-500 dark:text-gray-400">
-                                    {{ $page.props.auth?.user?.email || '' }}
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Contenu principal -->
-            <div class="flex-1 overflow-auto focus:outline-none lg:ml-64 transition-all duration-200" tabindex="0">
-                <!-- Overlay pour mobile -->
-                <div
-                    v-show="sidebarOpen"
-                    @click="sidebarOpen = false"
-                    class="fixed inset-0 z-20 bg-black bg-opacity-50 lg:hidden"
-                ></div>
-
-                <!-- Contenu de la page -->
-                <main class="p-6">
-                    <slot name="header">
-                        <h1 class="text-2xl font-semibold text-gray-900 dark:text-white mb-6">
-                            {{ $page.props.title || 'Tableau de bord' }}
-                        </h1>
-                    </slot>
-                    
-                    <slot />
-                </main>
-            </div>
+  <div class="min-h-screen bg-background">
+    <!-- Barre de navigation supérieure -->
+    <header class="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <div class="container flex h-16 items-center">
+        <!-- Logo et bouton menu mobile -->
+        <div class="flex items-center justify-between pl-6">
+          <Link :href="route('home')" class="flex items-center space-x-6">
+            <span class="hidden text-lg font-bold md:inline-flex">Quizizy</span>
+          </Link>
         </div>
+
+        <!-- Bouton menu mobile -->
+        <Sheet :open="sidebarOpen" @update:open="(val) => sidebarOpen = val">
+          <SheetTrigger as-child class="md:hidden">
+            <Button variant="ghost" size="icon" class="mr-2">
+              <Menu class="h-5 w-5" />
+              <span class="sr-only">Ouvrir le menu</span>
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="left" class="w-[300px] p-0">
+            <div class="flex h-full flex-col overflow-hidden">
+              <!-- En-tête du menu mobile -->
+              <div class="flex h-16 items-center justify-between px-6">
+                <h2 class="text-lg font-semibold">Menu</h2>
+                <SheetTrigger as-child>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    class="h-8 w-8"
+                    @click="sidebarOpen = false"
+                  >
+                    <X class="h-4 w-4" />
+                    <span class="sr-only">Fermer le menu</span>
+                  </Button>
+                </SheetTrigger>
+              </div>
+              <Separator />
+
+              <!-- Navigation mobile -->
+              <ScrollArea class="flex-1">
+                <nav class="space-y-1 p-2">
+                  <div v-for="item in navigation" :key="item.name" class="relative">
+                    <Link
+                      :href="item.href"
+                      @click="closeSidebar"
+                      class="group relative flex w-full items-center rounded-md px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                      :class="{
+                        'bg-accent text-accent-foreground': isActive(item),
+                        'text-muted-foreground hover:bg-accent hover:text-accent-foreground': !isActive(item)
+                      }"
+                    >
+                      <component
+                        :is="item.icon"
+                        class="mr-3 h-5 w-5 flex-shrink-0"
+                        :class="{
+                          'text-primary': isActive(item),
+                          'text-muted-foreground': !isActive(item)
+                        }"
+                      />
+                      <span class="truncate">{{ item.name }}</span>
+                      <span
+                        v-if="isActive(item)"
+                        class="absolute right-3 h-1.5 w-1.5 rounded-full bg-primary"
+                      />
+                    </Link>
+                  </div>
+                </nav>
+              </ScrollArea>
+
+              <!-- Pied de page du menu mobile -->
+              <div class="border-t p-4">
+                <div class="flex items-center gap-3">
+                  <Avatar class="h-9 w-9">
+                    <AvatarFallback>{{ userInitials }}</AvatarFallback>
+                  </Avatar>
+                  <div class="grid flex-1">
+                    <p class="text-sm font-medium leading-none">
+                      {{ page.props.auth.user?.name || 'Utilisateur' }}
+                    </p>
+                    <p class="text-xs text-muted-foreground truncate">
+                      {{ page.props.auth.user?.email || '' }}
+                    </p>
+                  </div>
+                </div>
+                <div class="mt-3 flex items-center justify-between">
+                  <Button variant="ghost" size="sm" class="h-8 px-2 text-xs">
+                    <Settings class="mr-2 h-3.5 w-3.5" />
+                    Paramètres
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    class="h-8 px-2 text-xs text-destructive hover:text-destructive"
+                    as-child
+                  >
+                    <Link :href="route('logout')" method="post" as="button">
+                      <LogOut class="mr-2 h-3.5 w-3.5" />
+                      Déconnexion
+                    </Link>
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </SheetContent>
+        </Sheet>
+
+        <!-- Barre de recherche -->
+        <div class="hidden flex-1 px-4 md:flex md:items-center md:justify-end">
+          <div class="relative max-w-xl">
+            <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+              <SearchIcon class="h-4 w-4 text-muted-foreground" />
+            </div>
+            <Input
+              type="search"
+              placeholder="Recherche"
+              class="pl-10 w-full"
+            />
+          </div>
+        </div>
+
+        <!-- Actions utilisateur -->
+        <div class="ml-auto flex items-center space-x-1">
+          <!-- Bouton de notification -->
+          <Button variant="ghost" size="icon" class="h-9 w-9 rounded-full">
+            <Bell class="h-5 w-5" />
+            <!-- <span class="absolute right-2 top-2 h-2 w-2 rounded-full bg-primary"></span> -->
+            <span class="sr-only">Notifications</span>
+          </Button>
+
+          <!-- Bouton de basculement de thème -->
+          <Button
+            variant="ghost"
+            size="icon"
+            class="h-9 w-9 rounded-full"
+            @click="toggleTheme"
+            :aria-label="theme === 'dark' ? 'Passer en mode clair' : 'Passer en mode sombre'"
+          >
+            <Moon v-if="theme === 'light'" class="h-5 w-5" />
+            <Sun v-else class="h-5 w-5" />
+            <span class="sr-only">
+              {{ theme === 'dark' ? 'Passer en mode clair' : 'Passer en mode sombre' }}
+            </span>
+          </Button>
+
+          <!-- Menu utilisateur -->
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" class="relative h-9 w-9 rounded-full p-0">
+                <Avatar class="h-8 w-8">
+                  <AvatarFallback class="text-xs font-medium">{{ userInitials }}</AvatarFallback>
+                </Avatar>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent class="w-56" align="end" force-modal>
+              <div class="flex items-center gap-2 p-2">
+                <Avatar class="h-9 w-9">
+                  <AvatarFallback class="text-xs font-medium">{{ userInitials }}</AvatarFallback>
+                </Avatar>
+                <div class="grid flex-1">
+                  <p class="truncate text-sm font-medium">
+                    {{ page.props.auth.user?.name || 'Utilisateur' }}
+                  </p>
+                  <p class="truncate text-xs text-muted-foreground">
+                    {{ page.props.auth.user?.email || '' }}
+                  </p>
+                </div>
+              </div>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem asChild>
+                <Link :href="route('profile.edit')" class="w-full cursor-pointer">
+                  <UserIcon class="mr-2 h-4 w-4" />
+                  <span>Profil</span>
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="#" class="w-full cursor-pointer">
+                  <Settings class="mr-2 h-4 w-4" />
+                  <span>Paramètres</span>
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem asChild class="text-destructive focus:text-destructive">
+                <Link :href="route('logout')" method="post" as="button" class="w-full cursor-pointer">
+                  <LogOut class="mr-2 h-4 w-4" />
+                  <span>Déconnexion</span>
+                </Link>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </div>
+    </header>
+
+    <!-- Contenu principal -->
+    <div class="flex h-[calc(100vh-4rem)]">
+      <!-- Barre latérale (version desktop) -->
+      <aside class="hidden md:block w-64 border-r bg-background">
+        <div class="flex h-full flex-col">
+          <!-- En-tête de la barre latérale -->
+          <div class="flex h-16 items-center border-b px-6">
+            <h2 class="text-lg font-semibold">Tableau de bord</h2>
+          </div>
+
+          <!-- Navigation principale -->
+          <ScrollArea class="flex-1">
+            <nav class="space-y-1 p-2">
+              <div v-for="item in navigation" :key="item.name" class="relative">
+                <Link
+                  :href="item.href"
+                  class="group relative flex w-full items-center rounded-md px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  :class="{
+                    'bg-accent text-accent-foreground': isActive(item),
+                    'text-muted-foreground hover:bg-accent hover:text-accent-foreground': !isActive(item)
+                  }"
+                >
+                  <component
+                    :is="item.icon"
+                    class="mr-3 h-5 w-5 flex-shrink-0"
+                    :class="{
+                      'text-primary': isActive(item),
+                      'text-muted-foreground': !isActive(item)
+                    }"
+                  />
+                  <span class="truncate">{{ item.name }}</span>
+                  <span
+                    v-if="isActive(item)"
+                    class="absolute right-3 h-1.5 w-1.5 rounded-full bg-primary"
+                  />
+                </Link>
+              </div>
+            </nav>
+          </ScrollArea>
+
+          <!-- Pied de page de la barre latérale -->
+          <div class="border-t p-4">
+            <div class="flex items-center gap-3">
+              <Avatar class="h-9 w-9">
+                <AvatarFallback>{{ userInitials }}</AvatarFallback>
+              </Avatar>
+              <div class="grid flex-1">
+                <p class="text-sm font-medium leading-none">
+                  {{ page.props.auth.user?.name || 'Utilisateur' }}
+                </p>
+                <p class="text-xs text-muted-foreground truncate">
+                  {{ page.props.auth.user?.email || '' }}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Contenu de la page -->
+      <main class="flex-1 overflow-auto p-6">
+        <slot />
+      </main>
     </div>
+  </div>
 </template>
 
 <style scoped>
-/* Transitions pour le menu latéral */
-.slide-enter-active, .slide-leave-active {
-    transition: transform 0.2s ease;
-}
-.slide-enter-from, .slide-leave-to {
-    transform: translateX(-100%);
-}
-
-/* Animation pour le menu utilisateur */
-.fade-enter-active, .fade-leave-active {
-    transition: opacity 0.15s ease;
-}
-.fade-enter-from, .fade-leave-to {
-    opacity: 0;
+/* Transitions optimisées */
+.slide-enter-active,
+.slide-leave-active,
+.fade-enter-active,
+.fade-leave-active {
+  transition-property: all;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 200ms;
 }
 
-/* Personnalisation de la barre de défilement */
+.slide-enter-from,
+.slide-leave-to {
+  transform: translateX(-100%);
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+/* Barre de défilement personnalisée */
 ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+  width: 0.5rem;
+  height: 0.5rem;
 }
 
 ::-webkit-scrollbar-track {
-    background: #f1f1f1;
-    border-radius: 3px;
+  background-color: hsl(var(--background));
+  border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb {
-    background: #c1c1c1;
-    border-radius: 3px;
+  background-color: hsl(var(--muted-foreground) / 0.3);
+  border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: #a8a8a8;
-}
-
-/* Mode sombre pour la barre de défilement */
-.dark ::-webkit-scrollbar-track {
-    background: #2d3748;
+  background-color: hsl(var(--muted-foreground) / 0.5);
 }
 
 .dark ::-webkit-scrollbar-thumb {
-    background: #4a5568;
+  background-color: hsl(var(--muted-foreground) / 0.5);
 }
 
 .dark ::-webkit-scrollbar-thumb:hover {
-    background: #718096;
+  background-color: hsl(var(--muted-foreground) / 0.7);
 }
 
-/* Amélioration de la transition des couleurs */
+/* Optimisation des transitions */
 * {
-    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 200ms;
+}
+
+/* Correction du débordement sur mobile */
+@media (max-width: 768px) {
+  html, body {
+    overflow-x: hidden;
+  }
 }
 </style>
