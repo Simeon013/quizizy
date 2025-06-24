@@ -1,121 +1,148 @@
-<script setup>
-import { Head, Link } from '@inertiajs/vue3';
+<script setup lang="ts">
+import { Head, Link, router } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
-import { ref } from 'vue';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { MoreHorizontal, Plus, Pencil, Trash2, Check, X } from 'lucide-vue-next';
 
-const props = defineProps({
-    categories: {
-        type: Array,
-        required: true
-    }
-});
+interface Category {
+    id: number;
+    name: string;
+    description: string | null;
+    color: string;
+    icon: string;
+    is_active: boolean;
+}
 
-const deleteCategory = (id) => {
+const props = defineProps<{
+    categories: Category[];
+}>();
+
+const deleteCategory = (id: number) => {
     if (confirm('Êtes-vous sûr de vouloir supprimer cette catégorie ?')) {
-        router.delete(route('admin.categories.destroy', id), {
-            onSuccess: () => {
-                // La suppression sera gérée par Inertia
-            }
-        });
+        router.delete(route('admin.categories.destroy', id));
     }
 };
 </script>
 
 <template>
     <Head title="Gestion des catégories" />
-    
+
     <AdminLayout>
         <template #header>
-            <div class="flex justify-between items-center">
-                <h2 class="text-xl font-semibold leading-tight text-gray-800 dark:text-gray-200">
+            <div class="flex justify-between items-center w-full">
+                <h2 class="text-xl font-semibold leading-tight">
                     Gestion des catégories
                 </h2>
-                <Link 
-                    :href="route('admin.categories.create')" 
-                    class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-                >
-                    Ajouter une catégorie
-                </Link>
             </div>
         </template>
 
         <div class="py-6">
-            <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-                <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
-                    <div class="p-6 text-gray-900 dark:text-gray-100">
-                        <div class="overflow-x-auto">
-                            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                                <thead class="bg-gray-50 dark:bg-gray-700">
-                                    <tr>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                            Nom
-                                        </th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                            Description
-                                        </th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                            Statut
-                                        </th>
-                                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                            Actions
-                                        </th>
-                                    </tr>
-                                </thead>
-                                <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                                    <tr v-for="category in categories" :key="category.id" class="hover:bg-gray-50 dark:hover:bg-gray-700">
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            <div class="flex items-center">
-                                                <div class="flex-shrink-0 h-10 w-10 rounded-full flex items-center justify-center text-white" 
-                                                    :style="{ backgroundColor: category.color }">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <Card>
+                    <CardHeader class="pb-0">
+                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                            <div>
+                                <CardTitle>Liste des catégories</CardTitle>
+                                <CardDescription class="mt-1">
+                                    Gérer les catégories de questions du quiz
+                                </CardDescription>
+                            </div>
+                            <Button as-child variant="outline" class="w-full sm:w-auto">
+                                <Link :href="route('admin.categories.create')" class="flex items-center justify-center gap-2">
+                                    <Plus class="h-4 w-4" />
+                                    <span>Ajouter une catégorie</span>
+                                </Link>
+                            </Button>
+                        </div>
+                    </CardHeader>
+                    <CardContent>
+                        <div class="rounded-md border">
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead class="w-[300px]">Nom</TableHead>
+                                        <TableHead>Description</TableHead>
+                                        <TableHead class="w-[120px]">Statut</TableHead>
+                                        <TableHead class="w-[100px] text-right">Actions</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    <TableRow v-for="category in categories" :key="category.id">
+                                        <TableCell class="font-medium">
+                                            <div class="flex items-center space-x-3">
+                                                <div
+                                                    class="h-9 w-9 rounded-full flex items-center justify-center text-white flex-shrink-0"
+                                                    :style="{ backgroundColor: category.color }"
+                                                >
                                                     <i :class="`fas fa-${category.icon}`"></i>
                                                 </div>
-                                                <div class="ml-4">
-                                                    <div class="text-sm font-medium text-gray-900 dark:text-gray-100">
-                                                        {{ category.name }}
-                                                    </div>
-                                                </div>
+                                                <span class="truncate">{{ category.name }}</span>
                                             </div>
-                                        </td>
-                                        <td class="px-6 py-4">
-                                            <div class="text-sm text-gray-500 dark:text-gray-400">
+                                        </TableCell>
+                                        <TableCell>
+                                            <div class="text-muted-foreground text-sm line-clamp-1">
                                                 {{ category.description || 'Aucune description' }}
                                             </div>
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            <span 
-                                                class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full"
-                                                :class="category.is_active 
-                                                    ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' 
-                                                    : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'"
+                                        </TableCell>
+                                        <TableCell>
+                                            <Badge
+                                                variant="outline"
+                                                :class="category.is_active
+                                                    ? 'bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20'
+                                                    : 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20'"
                                             >
-                                                {{ category.is_active ? 'Active' : 'Inactive' }}
-                                            </span>
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                            <Link 
-                                                :href="route('admin.categories.edit', category.id)" 
-                                                class="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 mr-3"
-                                            >
-                                                Éditer
-                                            </Link>
-                                            <button 
-                                                @click="deleteCategory(category.id)"
-                                                class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
-                                            >
-                                                Supprimer
-                                            </button>
-                                        </td>
-                                    </tr>
-                                    <tr v-if="categories.length === 0">
-                                        <td colspan="4" class="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
+                                                <span class="flex items-center">
+                                                    <component
+                                                        :is="category.is_active ? Check : X"
+                                                        class="h-3 w-3 mr-1"
+                                                    />
+                                                    {{ category.is_active ? 'Active' : 'Inactive' }}
+                                                </span>
+                                            </Badge>
+                                        </TableCell>
+                                        <TableCell class="text-right">
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger as-child>
+                                                    <Button variant="ghost" class="h-8 w-8 p-0">
+                                                        <span class="sr-only">Ouvrir le menu</span>
+                                                        <MoreHorizontal class="h-4 w-4" />
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end">
+                                                    <DropdownMenuItem as-child>
+                                                        <Link
+                                                            :href="route('admin.categories.edit', category.id)"
+                                                            class="cursor-pointer w-full flex items-center"
+                                                        >
+                                                            <Pencil class="mr-2 h-4 w-4" />
+                                                            <span>Modifier</span>
+                                                        </Link>
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem
+                                                        class="text-red-600 dark:text-red-400 focus:bg-red-50 dark:focus:bg-red-900/20"
+                                                        @click="deleteCategory(category.id)"
+                                                    >
+                                                        <Trash2 class="mr-2 h-4 w-4" />
+                                                        <span>Supprimer</span>
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        </TableCell>
+                                    </TableRow>
+                                    <TableRow v-if="categories.length === 0">
+                                        <TableCell colspan="4" class="h-24 text-center">
                                             Aucune catégorie trouvée.
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
+                                        </TableCell>
+                                    </TableRow>
+                                </TableBody>
+                            </Table>
                         </div>
-                    </div>
-                </div>
+                    </CardContent>
+                </Card>
             </div>
         </div>
     </AdminLayout>

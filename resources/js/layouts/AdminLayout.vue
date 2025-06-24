@@ -378,8 +378,18 @@ onUnmounted((): void => {
       </aside>
 
       <!-- Contenu de la page -->
-      <main class="flex-1 overflow-auto p-6">
-        <slot />
+      <main class="flex-1 overflow-auto">
+        <!-- En-tête de la page -->
+        <div v-if="$slots.header" class="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+          <div class="container flex h-16 items-center px-6">
+            <slot name="header" />
+          </div>
+        </div>
+        
+        <!-- Contenu principal -->
+        <div class="p-6">
+          <slot />
+        </div>
       </main>
     </div>
   </div>

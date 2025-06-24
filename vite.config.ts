@@ -24,6 +24,11 @@ export default defineConfig({
     resolve: {
         alias: {
             '@': path.resolve(__dirname, './resources/js'),
+            '~': path.resolve(__dirname, './node_modules'),
         },
+        extensions: ['.js', '.jsx', '.ts', '.tsx', '.json', '.vue'],
+    },
+    optimizeDeps: {
+        include: ['lucide-vue-next'],
     },
 });
