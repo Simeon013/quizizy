@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
-import { ref, watch, computed, onUnmounted } from 'vue';
+import { ref, watch, computed, onUnmounted, nextTick } from 'vue';
 import type { Ref } from 'vue';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import { Button } from '@/components/ui/button';
@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus, Search, Edit, Trash2, MoreHorizontal } from 'lucide-vue-next';
 import { toast } from 'sonner';
+// La fonction route est disponible globalement via Ziggy
 
 interface Question {
     id: number;
@@ -81,21 +82,21 @@ const filters = ref({
 // Fonction pour mettre en surbrillance le texte recherché (version sécurisée et optimisée)
 const highlightSearch = (text: string) => {
     if (!filters.value.search || !text) return text || '';
-    
+
     try {
         // Échapper les caractères spéciaux de regex de manière sécurisée
         const searchText = filters.value.search
             .replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
             .replace(/\s+/g, '\\s*'); // Gérer les espaces multiples
-            
+
         const regex = new RegExp(`(${searchText})`, 'gi');
-        
+
         // Nettoyer le texte pour éviter les attaques XSS
         const cleanText = text
             .replace(/&/g, '&amp;')
             .replace(/</g, '&lt;')
             .replace(/>/g, '&gt;');
-            
+
         return cleanText.replace(regex, '<span class="bg-yellow-200 dark:bg-yellow-800 text-foreground">$1</span>');
     } catch (e) {
         console.error('Erreur lors de la mise en surbrillance :', e);
@@ -126,6 +127,20 @@ const statuses = [
 
 // Référence pour le timer de debounce
 let debounceTimer: number | null = null;
+const searchInput = ref<HTMLInputElement | null>(null);
+
+// Effacer la recherche
+const clearSearch = () => {
+    if (filters.value.search) {
+        filters.value.search = '';
+        // Forcer le focus sur le champ après la réinitialisation
+        nextTick(() => {
+            searchInput.value?.focus();
+            // Déclencher la recherche après la réinitialisation
+            applyFilters();
+        });
+    }
+};
 
 // Annuler le debounce en cours
 const cancelDebounce = () => {
@@ -135,15 +150,22 @@ const cancelDebounce = () => {
     }
 };
 
+// La fonction route est déjà déclarée globalement dans types/ziggy.d.ts
+
 // Appliquer les filtres avec debounce optimisé
 const applyFilters = () => {
     // Annuler le debounce précédent s'il existe
     cancelDebounce();
-    
+
+    // Si pas de recherche ou recherche de plus de 2 caractères, on attend le debounce
+    if (filters.value.search && filters.value.search.length < 3) {
+        return;
+    }
+
     // Démarrer le minuteur de debounce
     debounceTimer = window.setTimeout(() => {
         isLoading.value = true;
-        
+
         router.get(route('admin.questions.index'), {
             search: filters.value.search,
             category: filters.value.category,
@@ -173,20 +195,21 @@ const applyFilters = () => {
                 isLoading.value = false;
             },
             onError: () => {
+                isLoading.value = false;
                 toast.error('Une erreur est survenue lors du filtrage des questions');
             }
         });
     }, 350); // Délai réduit pour une meilleure réactivité
 };
 
-// Watcher pour la recherche avec gestion du cas où l'utilisateur efface le champ
+// Watcher pour la recherche avec gestion du debounce
 watch(() => filters.value.search, (newVal, oldVal) => {
     if (newVal !== oldVal) {
-        if (newVal === '' && oldVal) {
-            // Si l'utilisateur efface le champ, appliquer immédiatement
-            cancelDebounce();
+        // Si le champ est vidé, on applique immédiatement les filtres
+        if (newVal === '') {
             applyFilters();
-        } else {
+        } else if (newVal.length >= 3) {
+            // Sinon, on attend que l'utilisateur ait tapé au moins 3 caractères
             applyFilters();
         }
     }
@@ -213,7 +236,7 @@ onUnmounted(() => {
 const resetFilters = () => {
     // Annuler tout debounce en cours
     cancelDebounce();
-    
+
     // Réinitialiser les filtres
     filters.value = {
         search: '',
@@ -222,13 +245,9 @@ const resetFilters = () => {
         status: 'active',
         sort: 'newest'
     };
-    
+
     // Appliquer immédiatement les filtres réinitialisés
     applyFilters();
-    // Utiliser un petit délai pour s'assurer que les valeurs sont mises à jour avant d'appliquer
-    setTimeout(() => {
-        applyFilters();
-    }, 50);
 };
 
 // Méthodes utilitaires
@@ -259,8 +278,6 @@ const getDifficultyColor = (difficulty: string): string => {
     return colors[difficulty] || 'bg-gray-500/10 text-gray-600 dark:text-gray-400 border-gray-500/20';
 };
 
-
-
 // Confirmer la suppression d'une question
 const confirmDelete = (question: Question) => {
     if (confirm('Êtes-vous sûr de vouloir supprimer cette question ?')) {
@@ -283,13 +300,14 @@ const confirmDelete = (question: Question) => {
 // Gestion de la pagination
 const handlePagination = (url: string | null) => {
     if (!url) return;
-    
+
     const page = new URL(url).searchParams.get('page');
     router.get(route('admin.questions.index'), { page }, {
         preserveState: true,
-        preserveScroll: true,
+        preserveScroll: true
     });
-};
+}
+
 </script>
 
 <template>
@@ -331,21 +349,31 @@ const handlePagination = (url: string | null) => {
                                 <div class="lg:col-span-2">
                                     <div class="relative">
                                         <Input
+                                            ref="searchInput"
                                             v-model="filters.search"
+                                            type="text"
                                             placeholder="Rechercher une question..."
-                                            class="w-full pl-10"
+                                            class="pl-10 pr-8 w-full"
+                                            :disabled="isLoading"
+                                            @keydown.esc="clearSearch"
+                                        />
+                                        <Search class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                                        <button
+                                            v-if="filters.search"
+                                            type="button"
+                                            class="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                                            @click="clearSearch"
                                             :disabled="isLoading"
                                         >
-                                            <template #left>
-                                                <Search class="h-4 w-4 text-muted-foreground" />
-                                            </template>
-                                            <template #right v-if="isLoading">
-                                                <svg class="animate-spin h-4 w-4 text-muted-foreground" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                                </svg>
-                                            </template>
-                                        </Input>
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                <line x1="18" y1="6" x2="6" y2="18"></line>
+                                                <line x1="6" y1="6" x2="18" y2="18"></line>
+                                            </svg>
+                                        </button>
+                                        <svg v-if="isLoading" class="animate-spin h-4 w-4 text-muted-foreground absolute right-2 top-1/2 -translate-y-1/2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
                                     </div>
                                 </div>
 
