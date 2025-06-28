@@ -48,7 +48,7 @@ const submit = () => {
 
 const confirmDelete = () => {
     if (confirm('Êtes-vous sûr de vouloir supprimer cette catégorie ?')) {
-        form.delete(route('admin.categories.destroy', props.category.id));
+        form.delete(route('admin.categories.destroy', props.category));
     }
 };
 
@@ -242,8 +242,7 @@ const selectIcon = (icon: string, e: Event) => {
                             <div class="flex items-center space-x-2 pt-2">
                                 <Switch
                                     id="is_active"
-                                    v-model:checked="form.is_active"
-                                    @update:checked="(val) => form.is_active = val"
+                                    v-model="form.is_active"
                                     :aria-checked="form.is_active"
                                 />
                                 <Label for="is_active" class="cursor-pointer">
