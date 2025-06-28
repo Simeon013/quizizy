@@ -1,3 +1,14 @@
+<script lang="ts">
+import { defineComponent } from 'vue';
+
+export default defineComponent({
+  name: 'AdminLayout',
+  setup() {
+    return {};
+  }
+});
+</script>
+
 <script setup lang="ts">
 import { Link, usePage } from '@inertiajs/vue3';
 import { ref, onMounted, onUnmounted, computed } from 'vue';
@@ -19,8 +30,10 @@ import {
   Folder,
   HelpCircle,
   Settings,
+  Search as SearchIcon,
   User as UserIcon
 } from 'lucide-vue-next';
+import { router } from '@inertiajs/vue3';
 
 const sidebarOpen = ref(false);
 const page = usePage();
@@ -49,19 +62,19 @@ const navigation: NavItem[] = [
   },
   {
     name: 'Questions',
-    href: '#',
+    href: route('admin.questions.index'),
     icon: HelpCircle,
     active: ['admin/questions']
   },
   {
     name: 'Utilisateurs',
-    href: '#',
+    href: route('admin.users.index'),
     icon: Users,
     active: ['admin/users']
   },
   {
     name: 'Statistiques',
-    href: '#',
+    href: route('admin.stats'),
     icon: BarChart2,
     active: ['admin/stats']
   },
@@ -99,6 +112,25 @@ const handleResize = (): void => {
 // Gestion du thème
 const theme = ref<string>('light');
 
+// Gestion de la recherche
+const searchQuery = ref('');
+
+const performSearch = () => {
+  if (searchQuery.value.trim()) {
+    router.visit(route('admin.search', { query: searchQuery.value }), {
+      only: ['results'],
+      preserveState: true,
+      preserveScroll: true,
+    });
+  }
+};
+
+// Gestion de la soumission du formulaire de recherche
+const handleSearch = (e: Event) => {
+  e.preventDefault();
+  performSearch();
+};
+
 const toggleTheme = (): void => {
   theme.value = theme.value === 'light' ? 'dark' : 'light';
   document.documentElement.classList.toggle('dark', theme.value === 'dark');
@@ -123,6 +155,8 @@ onUnmounted((): void => {
   window.removeEventListener('resize', handleResize);
 });
 </script>
+
+
 
 <template>
   <div class="min-h-screen bg-background">
@@ -233,16 +267,27 @@ onUnmounted((): void => {
 
         <!-- Barre de recherche -->
         <div class="hidden flex-1 px-4 md:flex md:items-center md:justify-end">
-          <div class="relative max-w-xl">
-            <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-              <SearchIcon class="h-4 w-4 text-muted-foreground" />
+          <form @submit="handleSearch" class="w-full max-w-xl">
+            <div class="relative">
+              <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                <SearchIcon class="h-4 w-4 text-muted-foreground" />
+              </div>
+              <Input
+                v-model="searchQuery"
+                type="search"
+                placeholder="Rechercher des utilisateurs, questions, catégories..."
+                class="pl-10 w-full"
+              />
+              <button
+                v-if="searchQuery"
+                type="button"
+                @click="searchQuery = ''"
+                class="absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground hover:text-foreground"
+              >
+                <X class="h-4 w-4" />
+              </button>
             </div>
-            <Input
-              type="search"
-              placeholder="Recherche"
-              class="pl-10 w-full"
-            />
-          </div>
+          </form>
         </div>
 
         <!-- Actions utilisateur -->
@@ -385,7 +430,7 @@ onUnmounted((): void => {
             <slot name="header" />
           </div>
         </div>
-        
+
         <!-- Contenu principal -->
         <div class="p-6">
           <slot />

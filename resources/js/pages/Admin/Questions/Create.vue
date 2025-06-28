@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { Head, useForm, Link } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import { ref, computed } from 'vue';
@@ -51,7 +51,7 @@ const toggleCorrect = (index) => {
 
 // Vérifier si le formulaire est valide
 const isFormValid = computed(() => {
-    return form.question_text.trim() !== '' && 
+    return form.question_text.trim() !== '' &&
            form.answers.every(a => a.text.trim() !== '') &&
            form.answers.some(a => a.is_correct);
 });
@@ -75,15 +75,15 @@ const submit = () => {
 
 <template>
     <Head title="Créer une question" />
-    
+
     <AdminLayout>
         <template #header>
             <div class="flex items-center justify-between">
                 <h2 class="text-xl font-semibold leading-tight text-gray-800 dark:text-gray-200">
                     Créer une nouvelle question
                 </h2>
-                <Link 
-                    :href="route('admin.questions.index')" 
+                <Link
+                    :href="route('admin.questions.index')"
                     class="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
                 >
                     Retour à la liste

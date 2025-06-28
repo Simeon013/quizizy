@@ -1,14 +1,107 @@
-<script setup>
-import { Head, Link } from '@inertiajs/vue3';
+<script setup lang="ts">
+import { Head, Link, router, usePage } from '@inertiajs/vue3';
+import { ref, watch, computed, onUnmounted } from 'vue';
+import type { Ref } from 'vue';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
-import { ref, computed } from 'vue';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Plus, Search, Edit, Trash2, MoreHorizontal } from 'lucide-vue-next';
+import { toast } from 'sonner';
 
-const props = defineProps({
+interface Question {
+    id: number;
+    question_text: string;
+    explanation: string | null;
+    difficulty: string;
+    is_active: boolean;
+    created_at: string;
+    updated_at: string;
+    category?: {
+        id: number;
+        name: string;
+        color: string;
+    };
+}
+
+const props = defineProps<{
     questions: {
-        type: Object,
-        required: true
-    }
+        data: Question[];
+        links: Array<{ url: string | null; label: string; active: boolean }>;
+        from: number;
+        to: number;
+        total: number;
+        current_page: number;
+        last_page: number;
+    };
+    categories: any[];
+    filters: {
+        search: string;
+        category: string;
+        difficulty: string;
+        status: string;
+        sort: string;
+    };
+    flash?: {
+        success?: string;
+        error?: string;
+    };
+}>();
+
+// Afficher les messages flash
+const page = usePage();
+if (page.props.flash?.success) {
+    toast.success(page.props.flash.success, {
+        description: '',
+        duration: 5000,
+    });
+} else if (page.props.flash?.error) {
+    toast.error(page.props.flash.error, {
+        description: '',
+        duration: 5000,
+    });
+}
+
+// Filtres et tri
+const loadingIds: Ref<number[]> = ref([]);
+const isLoading = ref(false);
+
+const filters = ref({
+    search: props.filters?.search || '',
+    category: props.filters?.category || '',
+    difficulty: props.filters?.difficulty || '',
+    status: props.filters?.status || 'active',
+    sort: props.filters?.sort || 'newest'
 });
+
+// Fonction pour mettre en surbrillance le texte recherché (version sécurisée et optimisée)
+const highlightSearch = (text: string) => {
+    if (!filters.value.search || !text) return text || '';
+    
+    try {
+        // Échapper les caractères spéciaux de regex de manière sécurisée
+        const searchText = filters.value.search
+            .replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+            .replace(/\s+/g, '\\s*'); // Gérer les espaces multiples
+            
+        const regex = new RegExp(`(${searchText})`, 'gi');
+        
+        // Nettoyer le texte pour éviter les attaques XSS
+        const cleanText = text
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
+            
+        return cleanText.replace(regex, '<span class="bg-yellow-200 dark:bg-yellow-800 text-foreground">$1</span>');
+    } catch (e) {
+        console.error('Erreur lors de la mise en surbrillance :', e);
+        return text;
+    }
+};
 
 // Options de tri
 const sortOptions = [
@@ -18,326 +111,412 @@ const sortOptions = [
     { name: 'Texte (Z-A)', value: 'text_desc' },
 ];
 
-// Filtres
-const filters = ref({
-    search: '',
-    category: '',
-    difficulty: '',
-    status: '',
-    sort: 'newest',
-});
-
-// Catégories uniques pour le filtre
-const categories = computed(() => {
-    return [...new Set(props.questions.data.map(q => q.category?.name).filter(Boolean))];
-});
-
-// Difficultés uniques pour le filtre
+// Difficultés
 const difficulties = [
     { value: 'easy', label: 'Facile' },
     { value: 'medium', label: 'Moyen' },
     { value: 'hard', label: 'Difficile' },
 ];
 
-// Statuts pour le filtre
+// Statuts
 const statuses = [
     { value: 'active', label: 'Actives' },
     { value: 'inactive', label: 'Inactives' },
 ];
 
-// Formater la date
-const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('fr-FR', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-    });
+// Référence pour le timer de debounce
+let debounceTimer: number | null = null;
+
+// Annuler le debounce en cours
+const cancelDebounce = () => {
+    if (debounceTimer) {
+        clearTimeout(debounceTimer);
+        debounceTimer = null;
+    }
 };
 
-// Obtenir la classe de couleur pour la difficulté
-const getDifficultyColor = (difficulty) => {
-    const colors = {
-        easy: 'bg-green-100 text-green-800',
-        medium: 'bg-yellow-100 text-yellow-800',
-        hard: 'bg-red-100 text-red-800',
+// Appliquer les filtres avec debounce optimisé
+const applyFilters = () => {
+    // Annuler le debounce précédent s'il existe
+    cancelDebounce();
+    
+    // Démarrer le minuteur de debounce
+    debounceTimer = window.setTimeout(() => {
+        isLoading.value = true;
+        
+        router.get(route('admin.questions.index'), {
+            search: filters.value.search,
+            category: filters.value.category,
+            difficulty: filters.value.difficulty,
+            status: filters.value.status,
+            sort: filters.value.sort
+        }, {
+            preserveState: true,
+            replace: true,
+            preserveScroll: true,
+            only: ['questions', 'filters'],
+            onSuccess: () => {
+                // Mettre à jour l'URL sans recharger la page
+                window.history.replaceState(
+                    {},
+                    '',
+                    route('admin.questions.index', {
+                        search: filters.value.search,
+                        category: filters.value.category,
+                        difficulty: filters.value.difficulty,
+                        status: filters.value.status,
+                        sort: filters.value.sort
+                    })
+                );
+            },
+            onFinish: () => {
+                isLoading.value = false;
+            },
+            onError: () => {
+                toast.error('Une erreur est survenue lors du filtrage des questions');
+            }
+        });
+    }, 350); // Délai réduit pour une meilleure réactivité
+};
+
+// Watcher pour la recherche avec gestion du cas où l'utilisateur efface le champ
+watch(() => filters.value.search, (newVal, oldVal) => {
+    if (newVal !== oldVal) {
+        if (newVal === '' && oldVal) {
+            // Si l'utilisateur efface le champ, appliquer immédiatement
+            cancelDebounce();
+            applyFilters();
+        } else {
+            applyFilters();
+        }
+    }
+});
+
+// Watcher pour les autres filtres (déclenchement immédiat)
+const otherFilters = computed(() => ({
+    category: filters.value.category,
+    difficulty: filters.value.difficulty,
+    status: filters.value.status,
+    sort: filters.value.sort
+}));
+
+watch(otherFilters, () => {
+    applyFilters();
+}, { deep: true });
+
+// Nettoyer les ressources lors de la destruction du composant
+onUnmounted(() => {
+    cancelDebounce();
+});
+
+// Réinitialiser les filtres
+const resetFilters = () => {
+    // Annuler tout debounce en cours
+    cancelDebounce();
+    
+    // Réinitialiser les filtres
+    filters.value = {
+        search: '',
+        category: '',
+        difficulty: '',
+        status: 'active',
+        sort: 'newest'
     };
-    return colors[difficulty] || 'bg-gray-100 text-gray-800';
+    
+    // Appliquer immédiatement les filtres réinitialisés
+    applyFilters();
+    // Utiliser un petit délai pour s'assurer que les valeurs sont mises à jour avant d'appliquer
+    setTimeout(() => {
+        applyFilters();
+    }, 50);
 };
 
-// Obtenir le libellé de la difficulté
-const getDifficultyLabel = (difficulty) => {
-    const labels = {
-        easy: 'Facile',
-        medium: 'Moyen',
-        hard: 'Difficile',
+// Méthodes utilitaires
+const getDifficultyVariant = (difficulty: string) => {
+    switch (difficulty) {
+        case 'easy': return 'success';
+        case 'medium': return 'warning';
+        case 'hard': return 'destructive';
+        default: return 'secondary';
+    }
+};
+
+const getDifficultyLabel = (difficulty: string) => {
+    switch (difficulty) {
+        case 'easy': return 'Facile';
+        case 'medium': return 'Moyen';
+        case 'hard': return 'Difficile';
+        default: return 'Non défini';
+    }
+};
+
+const getDifficultyColor = (difficulty: string): string => {
+    const colors: Record<string, string> = {
+        easy: 'bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20',
+        medium: 'bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border-yellow-500/20',
+        hard: 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20',
     };
-    return labels[difficulty] || difficulty;
+    return colors[difficulty] || 'bg-gray-500/10 text-gray-600 dark:text-gray-400 border-gray-500/20';
 };
 
-// Supprimer une question
-const deleteQuestion = (question) => {
-    if (confirm(`Êtes-vous sûr de vouloir supprimer la question : "${question.question_text}" ?`)) {
+
+
+// Confirmer la suppression d'une question
+const confirmDelete = (question: Question) => {
+    if (confirm('Êtes-vous sûr de vouloir supprimer cette question ?')) {
+        loadingIds.value = [...loadingIds.value, question.id];
         router.delete(route('admin.questions.destroy', question.id), {
             preserveScroll: true,
             onSuccess: () => {
-                // La suppression est gérée par Inertia
+                toast.success('Question supprimée avec succès');
+            },
+            onError: () => {
+                toast.error('Une erreur est survenue lors de la suppression de la question');
+            },
+            onFinish: () => {
+                loadingIds.value = loadingIds.value.filter((id: number) => id !== question.id);
             },
         });
     }
+};
+
+// Gestion de la pagination
+const handlePagination = (url: string | null) => {
+    if (!url) return;
+    
+    const page = new URL(url).searchParams.get('page');
+    router.get(route('admin.questions.index'), { page }, {
+        preserveState: true,
+        preserveScroll: true,
+    });
 };
 </script>
 
 <template>
     <Head title="Gestion des questions" />
-    
+
     <AdminLayout>
         <template #header>
-            <div class="flex justify-between items-center">
-                <h2 class="text-xl font-semibold leading-tight text-gray-800 dark:text-gray-200">
+            <div class="flex justify-between items-center w-full">
+                <h2 class="text-xl font-semibold leading-tight">
                     Gestion des questions
                 </h2>
-                <Link 
-                    :href="route('admin.questions.create')" 
-                    class="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-700 active:bg-blue-900 focus:outline-none focus:border-blue-900 focus:ring focus:ring-blue-300 disabled:opacity-25 transition"
-                >
-                    <i class="fas fa-plus mr-2"></i>
-                    Nouvelle question
-                </Link>
             </div>
         </template>
 
         <div class="py-6">
-            <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-                <!-- Filtres -->
-                <div class="bg-white dark:bg-gray-800 shadow-sm rounded-lg p-4 mb-6">
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
-                        <!-- Recherche -->
-                        <div class="lg:col-span-2">
-                            <label for="search" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                Rechercher
-                            </label>
-                            <div class="relative rounded-md shadow-sm">
-                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <i class="fas fa-search text-gray-400"></i>
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <Card>
+                    <CardHeader class="pb-0">
+                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                            <div>
+                                <CardTitle>Liste des questions</CardTitle>
+                                <CardDescription>
+                                    Gérer les questions du quiz
+                                </CardDescription>
+                            </div>
+                            <Button as-child>
+                                <Link :href="route('admin.questions.create')" class="gap-2">
+                                    <Plus class="h-4 w-4" />
+                                    Ajouter une question
+                                </Link>
+                            </Button>
+                        </div>
+                    </CardHeader>
+                    <CardContent>
+                        <!-- Filtres -->
+                        <div class="mb-6 p-4 bg-muted/50 rounded-md">
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                                <!-- Recherche -->
+                                <div class="lg:col-span-2">
+                                    <div class="relative">
+                                        <Input
+                                            v-model="filters.search"
+                                            placeholder="Rechercher une question..."
+                                            class="w-full pl-10"
+                                            :disabled="isLoading"
+                                        >
+                                            <template #left>
+                                                <Search class="h-4 w-4 text-muted-foreground" />
+                                            </template>
+                                            <template #right v-if="isLoading">
+                                                <svg class="animate-spin h-4 w-4 text-muted-foreground" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                </svg>
+                                            </template>
+                                        </Input>
+                                    </div>
                                 </div>
-                                <input
-                                    type="text"
-                                    id="search"
-                                    v-model="filters.search"
-                                    class="focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 sm:text-sm border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                                    placeholder="Rechercher une question..."
+
+                                <!-- Catégorie -->
+                                <div>
+                                    <Select v-model="filters.category" @update:modelValue="applyFilters">
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Toutes les catégories" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="">Toutes les catégories</SelectItem>
+                                            <SelectItem v-for="category in categories" :key="category.id" :value="category.id.toString()">
+                                                {{ category.name }}
+                                            </SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                <!-- Difficulté -->
+                                <div>
+                                    <Select v-model="filters.difficulty" @update:modelValue="applyFilters">
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Toutes les difficultés" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="">Toutes les difficultés</SelectItem>
+                                            <SelectItem v-for="difficulty in difficulties" :key="difficulty.value" :value="difficulty.value">
+                                                {{ difficulty.label }}
+                                            </SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                <!-- Statut -->
+                                <div>
+                                    <Select v-model="filters.status" @update:modelValue="applyFilters">
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Tous les statuts" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="">Tous les statuts</SelectItem>
+                                            <SelectItem v-for="status in statuses" :key="status.value" :value="status.value">
+                                                {{ status.label }}
+                                            </SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                <!-- Tri -->
+                                <div>
+                                    <Select v-model="filters.sort" @update:modelValue="applyFilters">
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Trier par" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem v-for="option in sortOptions" :key="option.value" :value="option.value">
+                                                {{ option.name }}
+                                            </SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                <!-- Boutons d'action -->
+                                <div class="flex items-end gap-2 lg:col-span-5">
+                                    <Button variant="outline" class="w-full" @click="resetFilters">
+                                        Réinitialiser
+                                    </Button>
+                                    <Button class="w-full" @click="applyFilters">
+                                        <Search class="h-4 w-4 mr-2" />
+                                        Filtrer
+                                    </Button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Tableau des questions -->
+                        <div class="rounded-md border">
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead class="w-[400px]">Question</TableHead>
+                                        <TableHead>Catégorie</TableHead>
+                                        <TableHead>Difficulté</TableHead>
+                                        <TableHead class="w-[120px]">Statut</TableHead>
+                                        <TableHead class="w-[100px] text-right">Actions</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    <TableRow v-for="question in questions.data" :key="question.id">
+                                        <TableCell class="font-medium">
+                                            <div class="space-y-1">
+                                                <div class="line-clamp-2" v-html="highlightSearch(question.question_text)"></div>
+                                                <div v-if="question.explanation" class="text-sm text-muted-foreground line-clamp-2">
+                                                    {{ question.explanation }}
+                                                </div>
+                                            </div>
+                                        </TableCell>
+                                        <TableCell>
+                                            <Badge v-if="question.category" :style="{ backgroundColor: question.category.color }" class="text-white">
+                                                {{ question.category.name }}
+                                            </Badge>
+                                            <span v-else class="text-muted-foreground">-</span>
+                                        </TableCell>
+                                        <TableCell>
+                                            <Badge :variant="getDifficultyVariant(question.difficulty)">
+                                                {{ getDifficultyLabel(question.difficulty) }}
+                                            </Badge>
+                                        </TableCell>
+                                        <TableCell>
+                                            <Badge :variant="question.is_active ? 'success' : 'secondary'">
+                                                {{ question.is_active ? 'Active' : 'Inactive' }}
+                                            </Badge>
+                                        </TableCell>
+                                        <TableCell class="text-right">
+                                            <div class="flex justify-end">
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger as-child>
+                                                        <Button variant="ghost" class="h-8 w-8 p-0">
+                                                            <span class="sr-only">Ouvrir le menu</span>
+                                                            <MoreHorizontal class="h-4 w-4" />
+                                                        </Button>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent align="end">
+                                                        <DropdownMenuItem as-child>
+                                                            <Link :href="route('admin.questions.edit', question.id)" class="w-full cursor-pointer">
+                                                                <Edit class="mr-2 h-4 w-4" />
+                                                                <span>Modifier</span>
+                                                            </Link>
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem
+                                                            @click="confirmDelete(question)"
+                                                            class="text-destructive focus:text-destructive cursor-pointer"
+                                                        >
+                                                            <Trash2 class="mr-2 h-4 w-4" />
+                                                            <span>Supprimer</span>
+                                                        </DropdownMenuItem>
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
+                                            </div>
+                                        </TableCell>
+                                    </TableRow>
+                                    <TableRow v-if="questions.data.length === 0">
+                                        <TableCell colspan="5" class="h-24 text-center">
+                                            Aucune question trouvée.
+                                        </TableCell>
+                                    </TableRow>
+                                </TableBody>
+                            </Table>
+                        </div>
+
+                        <!-- Pagination -->
+                        <div class="flex items-center justify-between px-2 mt-4">
+                            <div class="text-sm text-muted-foreground">
+                                Affichage de {{ questions.from }} à {{ questions.to }} sur {{ questions.total }} question(s)
+                            </div>
+                            <div class="flex space-x-2">
+                                <Button
+                                    v-for="(link, index) in questions.links"
+                                    :key="index"
+                                    :variant="link.active ? 'default' : 'outline'"
+                                    :disabled="!link.url"
+                                    @click="handlePagination(link.url)"
+                                    size="sm"
+                                    class="h-8 w-8 p-0"
                                 >
+                                    <span v-html="link.label"></span>
+                                </Button>
                             </div>
                         </div>
-
-                        <!-- Filtre par catégorie -->
-                        <div>
-                            <label for="category" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                Catégorie
-                            </label>
-                            <select
-                                id="category"
-                                v-model="filters.category"
-                                class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                            >
-                                <option value="">Toutes les catégories</option>
-                                <option v-for="category in categories" :key="category" :value="category">
-                                    {{ category }}
-                                </option>
-                            </select>
-                        </div>
-
-                        <!-- Filtre par difficulté -->
-                        <div>
-                            <label for="difficulty" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                Difficulté
-                            </label>
-                            <select
-                                id="difficulty"
-                                v-model="filters.difficulty"
-                                class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                            >
-                                <option value="">Tous les niveaux</option>
-                                <option v-for="diff in difficulties" :key="diff.value" :value="diff.value">
-                                    {{ diff.label }}
-                                </option>
-                            </select>
-                        </div>
-
-                        <!-- Filtre par statut -->
-                        <div>
-                            <label for="status" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                Statut
-                            </label>
-                            <select
-                                id="status"
-                                v-model="filters.status"
-                                class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                            >
-                                <option value="">Tous les statuts</option>
-                                <option v-for="status in statuses" :key="status.value" :value="status.value">
-                                    {{ status.label }}
-                                </option>
-                            </select>
-                        </div>
-
-                        <!-- Tri -->
-                        <div>
-                            <label for="sort" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                Trier par
-                            </label>
-                            <select
-                                id="sort"
-                                v-model="filters.sort"
-                                class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                            >
-                                <option v-for="option in sortOptions" :key="option.value" :value="option.value">
-                                    {{ option.name }}
-                                </option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Liste des questions -->
-                <div class="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-lg">
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                            <thead class="bg-gray-50 dark:bg-gray-700">
-                                <tr>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                        Question
-                                    </th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                        Catégorie
-                                    </th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                        Difficulté
-                                    </th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                        Réponses
-                                    </th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                        Statut
-                                    </th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                        Créée le
-                                    </th>
-                                    <th scope="col" class="relative px-6 py-3">
-                                        <span class="sr-only">Actions</span>
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                                <tr v-for="question in questions.data" :key="question.id" class="hover:bg-gray-50 dark:hover:bg-gray-700">
-                                    <td class="px-6 py-4 whitespace-nowrap">
-                                        <div class="text-sm font-medium text-gray-900 dark:text-white">
-                                            {{ question.question_text }}
-                                        </div>
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap">
-                                        <div class="flex items-center">
-                                            <div v-if="question.category" 
-                                                 class="h-4 w-4 rounded-full mr-2"
-                                                 :style="{ backgroundColor: question.category.color }">
-                                            </div>
-                                            <div class="text-sm text-gray-900 dark:text-white">
-                                                {{ question.category?.name || 'Sans catégorie' }}
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap">
-                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full" 
-                                              :class="getDifficultyColor(question.difficulty)">
-                                            {{ getDifficultyLabel(question.difficulty) }}
-                                        </span>
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
-                                        {{ question.answers_count }} 
-                                        <span class="text-green-600 dark:text-green-400 font-medium">
-                                            ({{ question.answers_count > 0 ? Math.round((question.answers.filter(a => a.is_correct).length / question.answers_count) * 100) : 0 }}% correctes)
-                                        </span>
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap">
-                                        <span v-if="question.is_active" 
-                                              class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                                            Active
-                                        </span>
-                                        <span v-else 
-                                              class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
-                                            Inactive
-                                        </span>
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
-                                        {{ formatDate(question.created_at) }}
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                        <div class="flex justify-end space-x-2">
-                                            <Link 
-                                                :href="route('admin.questions.edit', question.id)" 
-                                                class="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
-                                                title="Modifier"
-                                            >
-                                                <i class="fas fa-edit"></i>
-                                            </Link>
-                                            <button
-                                                @click="deleteQuestion(question)"
-                                                class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
-                                                title="Supprimer"
-                                            >
-                                                <i class="fas fa-trash"></i>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                                <tr v-if="questions.data.length === 0">
-                                    <td colspan="7" class="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
-                                        Aucune question trouvée.
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <!-- Pagination -->
-                    <div v-if="questions.links.length > 3" class="bg-white dark:bg-gray-800 px-4 py-3 flex items-center justify-between border-t border-gray-200 dark:border-gray-700 sm:px-6">
-                        <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-                            <div>
-                                <p class="text-sm text-gray-700 dark:text-gray-300">
-                                    Affichage de
-                                    <span class="font-medium">{{ questions.from }}-{{ questions.to }}</span>
-                                    sur
-                                    <span class="font-medium">{{ questions.total }}</span>
-                                    résultats
-                                </p>
-                            </div>
-                            <div>
-                                <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
-                                    <template v-for="(link, i) in questions.links" :key="i">
-                                        <Link 
-                                            v-if="link.url"
-                                            :href="link.url"
-                                            v-html="link.label"
-                                            class="relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium"
-                                            :class="{
-                                                'bg-blue-50 border-blue-500 text-blue-600 dark:bg-blue-900/30 dark:border-blue-600 dark:text-blue-300 z-10': link.active,
-                                                'bg-white dark:bg-gray-800 text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700': !link.active,
-                                                'rounded-l-md': i === 0,
-                                                'rounded-r-md': i === questions.links.length - 1
-                                            }"
-                                        />
-                                        <span v-else 
-                                              v-html="link.label"
-                                              class="relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm font-medium text-gray-700 dark:text-gray-300">
-                                        </span>
-                                    </template>
-                                </nav>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                    </CardContent>
+                </Card>
             </div>
         </div>
     </AdminLayout>

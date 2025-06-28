@@ -15,14 +15,58 @@ class QuestionController extends Controller
     /**
      * Affiche la liste des questions
      */
-    public function index()
+    public function index(Request $request)
     {
-        $questions = Question::with(['category', 'answers'])
-            ->latest()
-            ->paginate(10);
+        $query = Question::with(['category', 'answers']);
+
+        // Filtre par recherche
+        if ($request->has('search') && !empty($request->search)) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('question_text', 'like', "%{$search}%")
+                  ->orWhere('explanation', 'like', "%{$search}%");
+            });
+        }
+
+        // Filtre par catégorie
+        if ($request->has('category') && !empty($request->category)) {
+            $query->where('category_id', $request->category);
+        }
+
+        // Filtre par difficulté
+        if ($request->has('difficulty') && !empty($request->difficulty)) {
+            $query->where('difficulty', $request->difficulty);
+        }
+
+        // Filtre par statut
+        if ($request->has('status') && !empty($request->status)) {
+            $query->where('is_active', $request->status === 'active');
+        }
+
+        // Tri
+        $sort = $request->input('sort', 'newest');
+        switch ($sort) {
+            case 'oldest':
+                $query->oldest();
+                break;
+            case 'text_asc':
+                $query->orderBy('question_text');
+                break;
+            case 'text_desc':
+                $query->orderByDesc('question_text');
+                break;
+            default: // 'newest'
+                $query->latest();
+                break;
+        }
+
+        $questions = $query->paginate(10)->withQueryString();
+        $categories = Category::where('is_active', true)->orderBy('name')->get(['id', 'name']);
 
         return Inertia::render('Admin/Questions/Index', [
-            'questions' => $questions
+            'questions' => $questions,
+            'categories' => $categories,
+            'filters' => $request->only(['search', 'category', 'difficulty', 'status', 'sort'])
         ]);
     }
 
