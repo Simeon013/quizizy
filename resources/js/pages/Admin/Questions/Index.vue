@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
-import { ref, watch, computed, onUnmounted, nextTick } from 'vue';
+import { ref, watch, computed, onUnmounted, nextTick, onMounted } from 'vue';
 import type { Ref } from 'vue';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import { Button } from '@/components/ui/button';
@@ -10,9 +10,8 @@ import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Search, Edit, Trash2, MoreHorizontal } from 'lucide-vue-next';
+import { Plus, Search, Edit, Trash2, MoreHorizontal, X } from 'lucide-vue-next';
 import { toast } from 'sonner';
-// La fonction route est disponible globalement via Ziggy
 
 interface Question {
     id: number;
@@ -55,49 +54,62 @@ const props = defineProps<{
 
 // Afficher les messages flash
 const page = usePage();
-if (page.props.flash?.success) {
-    toast.success(page.props.flash.success, {
-        description: '',
-        duration: 5000,
-    });
-} else if (page.props.flash?.error) {
-    toast.error(page.props.flash.error, {
-        description: '',
-        duration: 5000,
-    });
-}
+onMounted(() => {
+    if (page.props.flash?.success) {
+        toast.success(page.props.flash.success, {
+            description: '',
+            duration: 5000,
+        });
+    } else if (page.props.flash?.error) {
+        toast.error(page.props.flash.error, {
+            description: '',
+            duration: 5000,
+        });
+    }
+});
 
-// Filtres et tri
+// État de chargement et filtres
 const loadingIds: Ref<number[]> = ref([]);
 const isLoading = ref(false);
+const searchInput = ref<HTMLInputElement | null>(null);
 
+// Initialiser les filtres avec les valeurs du serveur
 const filters = ref({
     search: props.filters?.search || '',
     category: props.filters?.category || '',
     difficulty: props.filters?.difficulty || '',
-    status: props.filters?.status || 'active',
+    status: props.filters?.status || '',
     sort: props.filters?.sort || 'newest'
 });
 
-// Fonction pour mettre en surbrillance le texte recherché (version sécurisée et optimisée)
+// Timer pour le debounce
+let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+
+// Options de configuration
+const DEBOUNCE_DELAY = 400;
+const MIN_SEARCH_LENGTH = 2;
+
+// Fonction pour mettre en surbrillance le texte recherché
 const highlightSearch = (text: string) => {
-    if (!filters.value.search || !text) return text || '';
+    if (!filters.value.search || !text || filters.value.search.length < MIN_SEARCH_LENGTH) {
+        return text || '';
+    }
 
     try {
-        // Échapper les caractères spéciaux de regex de manière sécurisée
+        // Échapper les caractères spéciaux et créer la regex
         const searchText = filters.value.search
             .replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-            .replace(/\s+/g, '\\s*'); // Gérer les espaces multiples
+            .replace(/\s+/g, '\\s*');
 
         const regex = new RegExp(`(${searchText})`, 'gi');
 
-        // Nettoyer le texte pour éviter les attaques XSS
+        // Nettoyer le texte pour éviter XSS
         const cleanText = text
             .replace(/&/g, '&amp;')
             .replace(/</g, '&lt;')
             .replace(/>/g, '&gt;');
 
-        return cleanText.replace(regex, '<span class="bg-yellow-200 dark:bg-yellow-800 text-foreground">$1</span>');
+        return cleanText.replace(regex, '<mark class="bg-yellow-200 dark:bg-yellow-800 text-foreground px-1 rounded">$1</mark>');
     } catch (e) {
         console.error('Erreur lors de la mise en surbrillance :', e);
         return text;
@@ -125,24 +137,7 @@ const statuses = [
     { value: 'inactive', label: 'Inactives' },
 ];
 
-// Référence pour le timer de debounce
-let debounceTimer: number | null = null;
-const searchInput = ref<HTMLInputElement | null>(null);
-
-// Effacer la recherche
-const clearSearch = () => {
-    if (filters.value.search) {
-        filters.value.search = '';
-        // Forcer le focus sur le champ après la réinitialisation
-        nextTick(() => {
-            searchInput.value?.focus();
-            // Déclencher la recherche après la réinitialisation
-            applyFilters();
-        });
-    }
-};
-
-// Annuler le debounce en cours
+// Fonction pour annuler le debounce
 const cancelDebounce = () => {
     if (debounceTimer) {
         clearTimeout(debounceTimer);
@@ -150,148 +145,141 @@ const cancelDebounce = () => {
     }
 };
 
-// La fonction route est déjà déclarée globalement dans types/ziggy.d.ts
-
-// Appliquer les filtres avec debounce optimisé
-const applyFilters = () => {
-    // Annuler le debounce précédent s'il existe
+// Fonction principale pour appliquer les filtres
+const applyFilters = (immediate = false) => {
     cancelDebounce();
 
-    // Si pas de recherche ou recherche de plus de 2 caractères, on attend le debounce
-    if (filters.value.search && filters.value.search.length < 3) {
-        return;
-    }
+    const executeFilter = () => {
+        // Éviter les requêtes inutiles si rien n'a changé
+        const currentUrl = new URL(window.location.href);
+        const newParams = new URLSearchParams();
 
-    // Démarrer le minuteur de debounce
-    debounceTimer = window.setTimeout(() => {
+        if (filters.value.search) newParams.set('search', filters.value.search);
+        if (filters.value.category) newParams.set('category', filters.value.category);
+        if (filters.value.difficulty) newParams.set('difficulty', filters.value.difficulty);
+        if (filters.value.status) newParams.set('status', filters.value.status);
+        if (filters.value.sort) newParams.set('sort', filters.value.sort);
+
+        // Comparer avec l'URL actuelle
+        if (currentUrl.search === '?' + newParams.toString()) {
+            return;
+        }
+
         isLoading.value = true;
 
         router.get(route('admin.questions.index'), {
-            search: filters.value.search,
-            category: filters.value.category,
-            difficulty: filters.value.difficulty,
-            status: filters.value.status,
-            sort: filters.value.sort
+            search: filters.value.search || undefined,
+            category: filters.value.category || undefined,
+            difficulty: filters.value.difficulty || undefined,
+            status: filters.value.status || undefined,
+            sort: filters.value.sort || undefined
         }, {
             preserveState: true,
             replace: true,
             preserveScroll: true,
             only: ['questions', 'filters'],
             onSuccess: () => {
-                // Mettre à jour l'URL sans recharger la page
-                window.history.replaceState(
-                    {},
-                    '',
-                    route('admin.questions.index', {
-                        search: filters.value.search,
-                        category: filters.value.category,
-                        difficulty: filters.value.difficulty,
-                        status: filters.value.status,
-                        sort: filters.value.sort
-                    })
-                );
+                console.log('Filtres appliqués avec succès');
+            },
+            onError: (errors) => {
+                console.error('Erreur lors du filtrage:', errors);
+                toast.error('Une erreur est survenue lors du filtrage des questions');
             },
             onFinish: () => {
                 isLoading.value = false;
-            },
-            onError: () => {
-                isLoading.value = false;
-                toast.error('Une erreur est survenue lors du filtrage des questions');
             }
         });
-    }, 350); // Délai réduit pour une meilleure réactivité
+    };
+
+    if (immediate) {
+        executeFilter();
+    } else {
+        debounceTimer = setTimeout(executeFilter, DEBOUNCE_DELAY);
+    }
 };
 
-// Watcher pour la recherche avec gestion du debounce
+// Effacer la recherche
+const clearSearch = () => {
+    filters.value.search = '';
+    nextTick(() => {
+        searchInput.value?.focus();
+    });
+};
+
+// Réinitialiser tous les filtres
+const resetFilters = () => {
+    cancelDebounce();
+
+    filters.value = {
+        search: '',
+        category: '',
+        difficulty: '',
+        status: '',
+        sort: 'newest'
+    };
+
+    applyFilters(true);
+};
+
+// Watchers pour les filtres
+// Watcher spécial pour la recherche avec debounce
 watch(() => filters.value.search, (newVal, oldVal) => {
     if (newVal !== oldVal) {
-        // Si le champ est vidé, on applique immédiatement les filtres
-        if (newVal === '') {
-            applyFilters();
-        } else if (newVal.length >= 3) {
-            // Sinon, on attend que l'utilisateur ait tapé au moins 3 caractères
+        if (newVal === '' || newVal.length >= MIN_SEARCH_LENGTH) {
             applyFilters();
         }
     }
 });
 
-// Watcher pour les autres filtres (déclenchement immédiat)
-const otherFilters = computed(() => ({
-    category: filters.value.category,
-    difficulty: filters.value.difficulty,
-    status: filters.value.status,
-    sort: filters.value.sort
-}));
-
-watch(otherFilters, () => {
-    applyFilters();
+// Watcher pour les autres filtres (application immédiate)
+watch(() => [
+    filters.value.category,
+    filters.value.difficulty,
+    filters.value.status,
+    filters.value.sort
+], () => {
+    applyFilters(true);
 }, { deep: true });
 
-// Nettoyer les ressources lors de la destruction du composant
+// Nettoyer les ressources
 onUnmounted(() => {
     cancelDebounce();
 });
 
-// Réinitialiser les filtres
-const resetFilters = () => {
-    // Annuler tout debounce en cours
-    cancelDebounce();
-
-    // Réinitialiser les filtres
-    filters.value = {
-        search: '',
-        category: '',
-        difficulty: '',
-        status: 'active',
-        sort: 'newest'
-    };
-
-    // Appliquer immédiatement les filtres réinitialisés
-    applyFilters();
-};
-
-// Méthodes utilitaires
+// Méthodes utilitaires pour les badges
 const getDifficultyVariant = (difficulty: string) => {
-    switch (difficulty) {
-        case 'easy': return 'success';
-        case 'medium': return 'warning';
-        case 'hard': return 'destructive';
-        default: return 'secondary';
-    }
+    const variants: Record<string, string> = {
+        easy: 'default',
+        medium: 'secondary',
+        hard: 'destructive'
+    };
+    return variants[difficulty] || 'secondary';
 };
 
 const getDifficultyLabel = (difficulty: string) => {
-    switch (difficulty) {
-        case 'easy': return 'Facile';
-        case 'medium': return 'Moyen';
-        case 'hard': return 'Difficile';
-        default: return 'Non défini';
-    }
-};
-
-const getDifficultyColor = (difficulty: string): string => {
-    const colors: Record<string, string> = {
-        easy: 'bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20',
-        medium: 'bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border-yellow-500/20',
-        hard: 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20',
+    const labels: Record<string, string> = {
+        easy: 'Facile',
+        medium: 'Moyen',
+        hard: 'Difficile'
     };
-    return colors[difficulty] || 'bg-gray-500/10 text-gray-600 dark:text-gray-400 border-gray-500/20';
+    return labels[difficulty] || 'Non défini';
 };
 
-// Confirmer la suppression d'une question
+// Confirmer la suppression
 const confirmDelete = (question: Question) => {
     if (confirm('Êtes-vous sûr de vouloir supprimer cette question ?')) {
         loadingIds.value = [...loadingIds.value, question.id];
+
         router.delete(route('admin.questions.destroy', question.id), {
             preserveScroll: true,
             onSuccess: () => {
                 toast.success('Question supprimée avec succès');
             },
             onError: () => {
-                toast.error('Une erreur est survenue lors de la suppression de la question');
+                toast.error('Une erreur est survenue lors de la suppression');
             },
             onFinish: () => {
-                loadingIds.value = loadingIds.value.filter((id: number) => id !== question.id);
+                loadingIds.value = loadingIds.value.filter(id => id !== question.id);
             },
         });
     }
@@ -301,13 +289,27 @@ const confirmDelete = (question: Question) => {
 const handlePagination = (url: string | null) => {
     if (!url) return;
 
-    const page = new URL(url).searchParams.get('page');
-    router.get(route('admin.questions.index'), { page }, {
-        preserveState: true,
-        preserveScroll: true
-    });
-}
+    const urlObj = new URL(url);
+    const page = urlObj.searchParams.get('page');
 
+    router.get(route('admin.questions.index'), {
+        ...Object.fromEntries(Object.entries(filters.value).filter(([_, v]) => v !== '')),
+        page
+    }, {
+        preserveState: true,
+        preserveScroll: true,
+        only: ['questions']
+    });
+};
+
+// Computed pour vérifier si des filtres sont actifs
+const hasActiveFilters = computed(() => {
+    return !!(filters.value.search ||
+             filters.value.category ||
+             filters.value.difficulty ||
+             filters.value.status ||
+             (filters.value.sort && filters.value.sort !== 'newest'));
+});
 </script>
 
 <template>
@@ -325,12 +327,12 @@ const handlePagination = (url: string | null) => {
         <div class="py-6">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <Card>
-                    <CardHeader class="pb-0">
+                    <CardHeader class="pb-4">
                         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                             <div>
                                 <CardTitle>Liste des questions</CardTitle>
                                 <CardDescription>
-                                    Gérer les questions du quiz
+                                    Gérer les questions du quiz ({{ questions.total }} question{{ questions.total > 1 ? 's' : '' }})
                                 </CardDescription>
                             </div>
                             <Button as-child>
@@ -341,9 +343,10 @@ const handlePagination = (url: string | null) => {
                             </Button>
                         </div>
                     </CardHeader>
+
                     <CardContent>
-                        <!-- Filtres -->
-                        <div class="mb-6 p-4 bg-muted/50 rounded-md">
+                        <!-- Section des filtres -->
+                        <div class="mb-6 p-4 bg-muted/30 rounded-lg border">
                             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                                 <!-- Recherche -->
                                 <div class="lg:col-span-2">
@@ -353,39 +356,46 @@ const handlePagination = (url: string | null) => {
                                             v-model="filters.search"
                                             type="text"
                                             placeholder="Rechercher une question..."
-                                            class="pl-10 pr-8 w-full"
+                                            class="pl-10 pr-10"
                                             :disabled="isLoading"
-                                            @keydown.esc="clearSearch"
                                         />
                                         <Search class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                                        <button
+
+                                        <!-- Bouton clear search -->
+                                        <Button
                                             v-if="filters.search"
-                                            type="button"
-                                            class="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                                            variant="ghost"
+                                            size="sm"
+                                            class="absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6 p-0 hover:bg-muted"
                                             @click="clearSearch"
                                             :disabled="isLoading"
                                         >
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                                <line x1="18" y1="6" x2="6" y2="18"></line>
-                                                <line x1="6" y1="6" x2="18" y2="18"></line>
-                                            </svg>
-                                        </button>
-                                        <svg v-if="isLoading" class="animate-spin h-4 w-4 text-muted-foreground absolute right-2 top-1/2 -translate-y-1/2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                        </svg>
+                                            <X class="h-3 w-3" />
+                                        </Button>
+
+                                        <!-- Indicateur de chargement -->
+                                        <div v-if="isLoading" class="absolute right-3 top-1/2 -translate-y-1/2">
+                                            <div class="animate-spin h-4 w-4 border-2 border-primary border-t-transparent rounded-full"></div>
+                                        </div>
+                                    </div>
+                                    <div v-if="filters.search && filters.search.length < MIN_SEARCH_LENGTH" class="text-xs text-muted-foreground mt-1">
+                                        Tapez au moins {{ MIN_SEARCH_LENGTH }} caractères pour rechercher
                                     </div>
                                 </div>
 
                                 <!-- Catégorie -->
                                 <div>
-                                    <Select v-model="filters.category" @update:modelValue="applyFilters">
+                                    <Select v-model="filters.category">
                                         <SelectTrigger>
                                             <SelectValue placeholder="Toutes les catégories" />
                                         </SelectTrigger>
                                         <SelectContent>
                                             <SelectItem value="">Toutes les catégories</SelectItem>
-                                            <SelectItem v-for="category in categories" :key="category.id" :value="category.id.toString()">
+                                            <SelectItem
+                                                v-for="category in categories"
+                                                :key="category.id"
+                                                :value="category.id.toString()"
+                                            >
                                                 {{ category.name }}
                                             </SelectItem>
                                         </SelectContent>
@@ -394,13 +404,17 @@ const handlePagination = (url: string | null) => {
 
                                 <!-- Difficulté -->
                                 <div>
-                                    <Select v-model="filters.difficulty" @update:modelValue="applyFilters">
+                                    <Select v-model="filters.difficulty">
                                         <SelectTrigger>
                                             <SelectValue placeholder="Toutes les difficultés" />
                                         </SelectTrigger>
                                         <SelectContent>
                                             <SelectItem value="">Toutes les difficultés</SelectItem>
-                                            <SelectItem v-for="difficulty in difficulties" :key="difficulty.value" :value="difficulty.value">
+                                            <SelectItem
+                                                v-for="difficulty in difficulties"
+                                                :key="difficulty.value"
+                                                :value="difficulty.value"
+                                            >
                                                 {{ difficulty.label }}
                                             </SelectItem>
                                         </SelectContent>
@@ -409,27 +423,38 @@ const handlePagination = (url: string | null) => {
 
                                 <!-- Statut -->
                                 <div>
-                                    <Select v-model="filters.status" @update:modelValue="applyFilters">
+                                    <Select v-model="filters.status">
                                         <SelectTrigger>
                                             <SelectValue placeholder="Tous les statuts" />
                                         </SelectTrigger>
                                         <SelectContent>
                                             <SelectItem value="">Tous les statuts</SelectItem>
-                                            <SelectItem v-for="status in statuses" :key="status.value" :value="status.value">
+                                            <SelectItem
+                                                v-for="status in statuses"
+                                                :key="status.value"
+                                                :value="status.value"
+                                            >
                                                 {{ status.label }}
                                             </SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>
+                            </div>
 
+                            <!-- Ligne séparée pour le tri et les actions -->
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
                                 <!-- Tri -->
                                 <div>
-                                    <Select v-model="filters.sort" @update:modelValue="applyFilters">
+                                    <Select v-model="filters.sort">
                                         <SelectTrigger>
                                             <SelectValue placeholder="Trier par" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem v-for="option in sortOptions" :key="option.value" :value="option.value">
+                                            <SelectItem
+                                                v-for="option in sortOptions"
+                                                :key="option.value"
+                                                :value="option.value"
+                                            >
                                                 {{ option.name }}
                                             </SelectItem>
                                         </SelectContent>
@@ -437,15 +462,52 @@ const handlePagination = (url: string | null) => {
                                 </div>
 
                                 <!-- Boutons d'action -->
-                                <div class="flex items-end gap-2 lg:col-span-5">
-                                    <Button variant="outline" class="w-full" @click="resetFilters">
+                                <div class="md:col-span-2 flex gap-2">
+                                    <Button
+                                        variant="outline"
+                                        @click="resetFilters"
+                                        :disabled="!hasActiveFilters || isLoading"
+                                        class="flex-1"
+                                    >
                                         Réinitialiser
                                     </Button>
-                                    <Button class="w-full" @click="applyFilters">
+                                    <Button
+                                        @click="() => applyFilters(true)"
+                                        :disabled="isLoading"
+                                        class="flex-1"
+                                    >
                                         <Search class="h-4 w-4 mr-2" />
-                                        Filtrer
+                                        {{ isLoading ? 'Recherche...' : 'Filtrer' }}
                                     </Button>
                                 </div>
+                            </div>
+
+                            <!-- Indicateurs de filtres actifs -->
+                            <div v-if="hasActiveFilters" class="flex flex-wrap gap-2 mt-3 pt-3 border-t">
+                                <Badge v-if="filters.search" variant="secondary" class="gap-1">
+                                    Recherche: "{{ filters.search }}"
+                                    <Button variant="ghost" size="sm" class="h-4 w-4 p-0" @click="filters.search = ''">
+                                        <X class="h-3 w-3" />
+                                    </Button>
+                                </Badge>
+                                <Badge v-if="filters.category" variant="secondary" class="gap-1">
+                                    Catégorie: {{ categories.find(c => c.id.toString() === filters.category)?.name }}
+                                    <Button variant="ghost" size="sm" class="h-4 w-4 p-0" @click="filters.category = ''">
+                                        <X class="h-3 w-3" />
+                                    </Button>
+                                </Badge>
+                                <Badge v-if="filters.difficulty" variant="secondary" class="gap-1">
+                                    Difficulté: {{ getDifficultyLabel(filters.difficulty) }}
+                                    <Button variant="ghost" size="sm" class="h-4 w-4 p-0" @click="filters.difficulty = ''">
+                                        <X class="h-3 w-3" />
+                                    </Button>
+                                </Badge>
+                                <Badge v-if="filters.status" variant="secondary" class="gap-1">
+                                    Statut: {{ statuses.find(s => s.value === filters.status)?.label }}
+                                    <Button variant="ghost" size="sm" class="h-4 w-4 p-0" @click="filters.status = ''">
+                                        <X class="h-3 w-3" />
+                                    </Button>
+                                </Badge>
                             </div>
                         </div>
 
@@ -472,7 +534,11 @@ const handlePagination = (url: string | null) => {
                                             </div>
                                         </TableCell>
                                         <TableCell>
-                                            <Badge v-if="question.category" :style="{ backgroundColor: question.category.color }" class="text-white">
+                                            <Badge
+                                                v-if="question.category"
+                                                :style="{ backgroundColor: question.category.color }"
+                                                class="text-white"
+                                            >
                                                 {{ question.category.name }}
                                             </Badge>
                                             <span v-else class="text-muted-foreground">-</span>
@@ -483,41 +549,53 @@ const handlePagination = (url: string | null) => {
                                             </Badge>
                                         </TableCell>
                                         <TableCell>
-                                            <Badge :variant="question.is_active ? 'success' : 'secondary'">
+                                            <Badge :variant="question.is_active ? 'default' : 'secondary'">
                                                 {{ question.is_active ? 'Active' : 'Inactive' }}
                                             </Badge>
                                         </TableCell>
                                         <TableCell class="text-right">
-                                            <div class="flex justify-end">
-                                                <DropdownMenu>
-                                                    <DropdownMenuTrigger as-child>
-                                                        <Button variant="ghost" class="h-8 w-8 p-0">
-                                                            <span class="sr-only">Ouvrir le menu</span>
-                                                            <MoreHorizontal class="h-4 w-4" />
-                                                        </Button>
-                                                    </DropdownMenuTrigger>
-                                                    <DropdownMenuContent align="end">
-                                                        <DropdownMenuItem as-child>
-                                                            <Link :href="route('admin.questions.edit', question.id)" class="w-full cursor-pointer">
-                                                                <Edit class="mr-2 h-4 w-4" />
-                                                                <span>Modifier</span>
-                                                            </Link>
-                                                        </DropdownMenuItem>
-                                                        <DropdownMenuItem
-                                                            @click="confirmDelete(question)"
-                                                            class="text-destructive focus:text-destructive cursor-pointer"
-                                                        >
-                                                            <Trash2 class="mr-2 h-4 w-4" />
-                                                            <span>Supprimer</span>
-                                                        </DropdownMenuItem>
-                                                    </DropdownMenuContent>
-                                                </DropdownMenu>
-                                            </div>
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger as-child>
+                                                    <Button variant="ghost" class="h-8 w-8 p-0">
+                                                        <span class="sr-only">Ouvrir le menu</span>
+                                                        <MoreHorizontal class="h-4 w-4" />
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end">
+                                                    <DropdownMenuItem as-child>
+                                                        <Link :href="route('admin.questions.edit', question.id)" class="w-full cursor-pointer">
+                                                            <Edit class="mr-2 h-4 w-4" />
+                                                            <span>Modifier</span>
+                                                        </Link>
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem
+                                                        @click="confirmDelete(question)"
+                                                        class="text-destructive focus:text-destructive cursor-pointer"
+                                                        :disabled="loadingIds.includes(question.id)"
+                                                    >
+                                                        <Trash2 class="mr-2 h-4 w-4" />
+                                                        <span>{{ loadingIds.includes(question.id) ? 'Suppression...' : 'Supprimer' }}</span>
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
                                         </TableCell>
                                     </TableRow>
+
+                                    <!-- Message quand aucune question trouvée -->
                                     <TableRow v-if="questions.data.length === 0">
-                                        <TableCell colspan="5" class="h-24 text-center">
-                                            Aucune question trouvée.
+                                        <TableCell colspan="5" class="h-32 text-center">
+                                            <div class="flex flex-col items-center gap-2">
+                                                <Search class="h-8 w-8 text-muted-foreground" />
+                                                <div>
+                                                    <p class="text-lg font-medium">Aucune question trouvée</p>
+                                                    <p class="text-sm text-muted-foreground">
+                                                        {{ hasActiveFilters ? 'Essayez de modifier vos critères de recherche' : 'Commencez par ajouter une question' }}
+                                                    </p>
+                                                </div>
+                                                <Button v-if="hasActiveFilters" variant="outline" @click="resetFilters">
+                                                    Réinitialiser les filtres
+                                                </Button>
+                                            </div>
                                         </TableCell>
                                     </TableRow>
                                 </TableBody>
@@ -525,19 +603,19 @@ const handlePagination = (url: string | null) => {
                         </div>
 
                         <!-- Pagination -->
-                        <div class="flex items-center justify-between px-2 mt-4">
+                        <div v-if="questions.total > 0" class="flex items-center justify-between px-2 mt-6">
                             <div class="text-sm text-muted-foreground">
-                                Affichage de {{ questions.from }} à {{ questions.to }} sur {{ questions.total }} question(s)
+                                Affichage de {{ questions.from || 0 }} à {{ questions.to || 0 }} sur {{ questions.total }} question{{ questions.total > 1 ? 's' : '' }}
                             </div>
-                            <div class="flex space-x-2">
+                            <div class="flex space-x-1">
                                 <Button
                                     v-for="(link, index) in questions.links"
                                     :key="index"
                                     :variant="link.active ? 'default' : 'outline'"
-                                    :disabled="!link.url"
+                                    :disabled="!link.url || isLoading"
                                     @click="handlePagination(link.url)"
                                     size="sm"
-                                    class="h-8 w-8 p-0"
+                                    class="min-w-[32px] h-8"
                                 >
                                     <span v-html="link.label"></span>
                                 </Button>
