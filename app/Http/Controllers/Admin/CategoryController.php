@@ -110,9 +110,9 @@ class CategoryController extends Controller
         if ($category->questions()->count() > 0) {
             return back()->with('error', 'Impossible de supprimer cette catégorie car elle contient des questions.');
         }
-        
+
         $category->delete();
-        
+
         return redirect()->route('admin.categories.index')
             ->with('success', 'Catégorie supprimée avec succès');
     }
