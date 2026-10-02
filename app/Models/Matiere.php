@@ -23,10 +23,10 @@ class Matiere extends Model
         return $this->hasMany(Quiz::class);
     }
 
-    /** @return HasMany<Quiz, $this> */
+    /** Les quiz du catalogue public (les intercalaires). @return HasMany<Quiz, $this> */
     public function quizPublies(): HasMany
     {
-        return $this->quiz()->where('publie', true);
+        return $this->quiz()->where('publie', true)->where('au_catalogue', true);
     }
 
     /**

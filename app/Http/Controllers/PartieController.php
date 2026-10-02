@@ -21,7 +21,10 @@ class PartieController extends Controller
 {
     public function demarrer(Request $request, Quiz $quiz): RedirectResponse
     {
-        abort_unless($quiz->publie, 404);
+        abort_unless($quiz->jouablePar($request->user()), 404);
+        if (! $quiz->questions()->exists()) {
+            return back()->with('alerte', 'Ce quiz n\'a pas encore de question.');
+        }
 
         $partie = Deroulement::demarrerQuiz($quiz, $request->user()?->id);
         AccesPartie::retenir($request, $partie);

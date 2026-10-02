@@ -92,7 +92,10 @@ class DirectController extends Controller
 
     public function ouvrir(Request $request, Quiz $quiz): RedirectResponse
     {
-        abort_unless($quiz->publie, 404);
+        abort_unless($quiz->jouablePar($request->user()), 404);
+        if (! $quiz->questions()->exists()) {
+            return back()->with('alerte', 'Ce quiz n\'a pas encore de question.');
+        }
 
         return redirect()->route('direct.ecran', Animation::ouvrir($quiz, $request->user()->id));
     }

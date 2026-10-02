@@ -56,6 +56,18 @@ Un animateur (compte obligatoire) projette un quiz ; les joueurs rejoignent sans
 - Symboles des réponses tracés au feutre (triangle, rond, carré, étoile) + couleur + texte : jamais la couleur seule. 4 choix au plus en direct.
 - QR code : `uqr`, chargé à la demande sur le grand écran seulement.
 
+## L'atelier (`app/Atelier`, 3 octobre 2026)
+
+Tout compte peut créer ses quiz (`/atelier`) : à partir d'un **texte collé**, d'un **thème**, ou **à la main**. L'IA propose des questions **au crayon** (`questions.a_l_encre = false`, affichées en graphite, pointillé, écriture à la main) ; l'auteur les relit, les corrige, les passe **à l'encre**. **Un quiz ne se publie que si toutes ses questions sont à l'encre, et s'il en a au moins 5.** Corriger une question vaut relecture : elle passe à l'encre.
+
+- **Rédacteur** : interface `Redacteur`, choisi par `EUREKA_REDACTEUR` : `claude` (par défaut si `ANTHROPIC_API_KEY` est posée), `factice` (tests et développement, aucun appel réseau), `aucun` (l'atelier reste utilisable à la main). `RedacteurClaude` passe par le **SDK PHP officiel** (`anthropic-ai/sdk`), modèle `claude-opus-5-5`, effort `high` (la justesse des faits compte plus que la vitesse), **sortie contrainte par un schéma JSON** (`Consignes::schema()`), et **repli automatique** si le modèle décline une demande (`fallbacks: 'default'`, en-tête `server-side-fallback-2026-07-01`). Erreurs du SDK traduites en messages lisibles (`ErreurRedaction`) ; un refus (`stop_reason: refusal`) aussi.
+- **Consignes** (`Consignes::SYSTEME`) : avec un texte source, rien qui n'y figure ; sans texte, seulement des faits établis ; « écris-en moins plutôt que d'en inventer ». Le texte source est traité comme une matière, jamais comme des instructions.
+- **Rien n'est enregistré tel que le modèle l'a rendu** : `Nettoyage` écarte les questions bancales (2 à 4 choix distincts, énoncé et explication non vides, longueurs bornées, balises retirées, doublons d'énoncé avec les questions existantes).
+- **Coût maîtrisé** : `EUREKA_GENERATIONS_PAR_JOUR` (5) par compte, administrateurs sans limite ; journal `generations` (statut, modèle, jetons d'entrée et de sortie). Le quota se compte sur la **journée locale ramenée en UTC** : sans cette conversion, il sautait chaque nuit entre 23 h et minuit UTC (trouvé par un test lancé à cette heure-là, verrouillé par un test).
+- Génération **synchrone** (pas de file d'attente sur un mutualisé) : `set_time_limit(180)`, et l'écran d'attente de Gribouille côté navigateur.
+- **Visibilité** : un quiz d'atelier publié se joue par son lien (solo et direct) ; seul un administrateur le met **au catalogue** (`quiz.au_catalogue`, intercalaires). Un brouillon n'est jouable que par son auteur, pour l'essayer.
+- Une question **déjà jouée ne se gomme pas** (les réponses des joueurs partiraient en cascade) : on la corrige.
+
 ## Contenu
 
 `database/seeders/contenu/*.php` : une matière par fichier, **le premier choix de chaque question est le bon** (mélangé à l'affichage). `ContenuSeeder` met à jour par slug et peut tourner en production ; il ne remplace jamais les questions d'un quiz déjà joué (la suppression effacerait les réponses en cascade). Chaque question a 4 choix, une explication et un indice : un test le vérifie. **Aucun chiffre ni fait sans être sûr** : une phrase non vérifiée (« popularisée par Baudelaire ») a été retirée.
@@ -79,5 +91,5 @@ Vérifier le rendu à 375 et 1280 px, en clair et en sombre, sans débordement h
 
 1. **Fait** : socle, mode solo complet (matières, partie, correction, copie, À revoir, bulletin, gommettes, série de jours), comptes.
 2. **Fait** : mode en direct (voir plus haut). À envisager : Pusher si l'interrogation régulière devient trop lourde pour l'hébergement (au-delà de quelques dizaines de joueurs), limites de l'offre gratuite à vérifier.
-3. L'atelier : création de quiz assistée par IA, propositions « au crayon » (graphite) à repasser « à l'encre » après relecture. Rien n'est publié sans relecture.
+3. **Fait** : l'atelier (voir plus haut). Jamais essayé avec une vraie clé d'API dans cette session : la qualité des questions proposées reste à juger sur de vrais textes.
 4. Mot de passe oublié (demande un envoi d'emails configuré), images de partage, administration.

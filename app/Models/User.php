@@ -17,6 +17,9 @@ class User extends Authenticatable
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
 
+    /** Valeur connue dès la création, sans relire la base. */
+    protected $attributes = ['is_admin' => false];
+
     /**
      * Get the attributes that should be cast.
      *

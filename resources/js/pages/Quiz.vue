@@ -22,6 +22,10 @@ const commencer = () => router.post(`/quiz/${props.quiz.slug}/parties`, {}, { on
         <article class="feuille garde-feuille">
             <Link :href="`/matieres/${matiere.slug}`" class="matiere-pastille" :style="{ background: matiere.onglet }">{{ matiere.nom }}</Link>
             <h1 class="t-page">{{ quiz.titre }}</h1>
+            <p v-if="quiz.brouillon" class="postit brouillon">
+                Brouillon : toi seul peux le voir. <Link :href="`/atelier/${quiz.slug}`" class="lien">Retour à l'atelier</Link>
+            </p>
+            <p v-else-if="quiz.monQuiz" class="discret"><Link :href="`/atelier/${quiz.slug}`" class="lien">Modifier dans l'atelier</Link></p>
             <p class="chapeau">{{ quiz.description }}</p>
             <ul class="regles">
                 <li><strong class="chiffres">{{ quiz.questions }}</strong> questions</li>
@@ -78,6 +82,10 @@ const commencer = () => router.post(`/quiz/${props.quiz.slug}/parties`, {}, { on
     border: 2px solid var(--encre);
     border-radius: 999px;
     text-decoration: none;
+}
+.brouillon {
+    font-size: 20px;
+    transform: rotate(-1deg);
 }
 .regles {
     margin: 0;

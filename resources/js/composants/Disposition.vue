@@ -14,12 +14,13 @@ watch(() => page.url, () => (menuOuvert.value = false));
 
 const liens = computed(() => [
     { href: '/matieres', texte: 'Matières' },
-    { href: '/rejoindre', texte: 'Rejoindre une partie' },
+    { href: '/rejoindre', texte: 'Rejoindre' },
     ...(utilisateur.value
         ? [
               { href: '/cahier', texte: 'Mon cahier' },
               { href: '/a-revoir', texte: 'À revoir' },
               { href: '/bulletin', texte: 'Bulletin' },
+              { href: '/atelier', texte: 'Atelier' },
           ]
         : []),
 ]);
@@ -155,7 +156,7 @@ const deconnecter = () => router.post('/deconnexion');
     stroke-linecap: round;
     fill: none;
 }
-@media (max-width: 899px) {
+@media (max-width: 1099px) {
     .nav.nav-ouverte {
         display: flex;
         flex-direction: column;
@@ -176,7 +177,7 @@ const deconnecter = () => router.post('/deconnexion');
         text-align: left;
     }
 }
-@media (min-width: 900px) {
+@media (min-width: 1100px) {
     .nav {
         display: flex;
     }

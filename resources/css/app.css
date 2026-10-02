@@ -280,6 +280,11 @@ body {
     border-bottom-color: var(--rouge);
     background: linear-gradient(transparent 60%, var(--surligne) 60%);
 }
+/* Une grande zone de texte se repère à sa bordure, pas au surligneur (qui n'en colorerait qu'une bande). */
+textarea.champ:focus {
+    background: transparent;
+    border-color: var(--rouge);
+}
 .etiquette-champ {
     font-family: var(--font-main);
     font-weight: 700;

@@ -11,18 +11,30 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Table('quiz')]
 #[RouteKey('slug')]
-#[Fillable(['matiere_id', 'auteur_id', 'titre', 'slug', 'description', 'secondes_par_question', 'publie'])]
+#[Fillable(['matiere_id', 'auteur_id', 'titre', 'slug', 'description', 'secondes_par_question', 'publie', 'au_catalogue'])]
 class Quiz extends Model
 {
     protected function casts(): array
     {
-        return ['publie' => 'boolean'];
+        return ['publie' => 'boolean', 'au_catalogue' => 'boolean'];
+    }
+
+    /** Publié, ou brouillon que son auteur essaie avant de le publier. */
+    public function jouablePar(?User $user): bool
+    {
+        return $this->publie || ($user !== null && $user->id === $this->auteur_id);
     }
 
     /** @return BelongsTo<Matiere, $this> */
     public function matiere(): BelongsTo
     {
         return $this->belongsTo(Matiere::class);
+    }
+
+    /** @return BelongsTo<User, $this> */
+    public function auteur(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'auteur_id');
     }
 
     /** @return HasMany<Question, $this> */

@@ -34,6 +34,7 @@ class ContenuSeeder extends Seeder
                     'matiere_id' => $matiere->id,
                     'titre' => $q['titre'],
                     'description' => $q['description'],
+                    'au_catalogue' => true,
                 ]);
 
                 // Supprimer des questions déjà jouées effacerait les réponses des joueurs (cascade).

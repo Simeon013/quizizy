@@ -56,7 +56,7 @@ class CatalogueController extends Controller
 
     public function quiz(Request $request, Quiz $quiz): Response
     {
-        abort_unless($quiz->publie, 404);
+        abort_unless($quiz->jouablePar($request->user()), 404);
         $quiz->load('matiere')->loadCount('questions');
 
         $enCours = $request->user()
@@ -71,6 +71,8 @@ class CatalogueController extends Controller
                 'description' => $quiz->description,
                 'questions' => min($quiz->questions_count, (int) config('eureka.questions_par_partie')),
                 'secondes' => $quiz->secondes_par_question,
+                'brouillon' => ! $quiz->publie,
+                'monQuiz' => $quiz->auteur_id !== null && $quiz->auteur_id === $request->user()?->id,
             ],
             'matiere' => $quiz->matiere->resume(),
             'meilleure' => $this->terminesParQuiz($request)[$quiz->id] ?? null,

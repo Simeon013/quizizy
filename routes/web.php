@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AtelierController;
 use App\Http\Controllers\Auth\ConnexionController;
 use App\Http\Controllers\Auth\InscriptionController;
 use App\Http\Controllers\CahierController;
@@ -42,6 +43,24 @@ Route::middleware('auth')->group(function () {
         Route::post('/animer/{salle}/{action}', [DirectController::class, 'commande'])
             ->whereIn('action', ['suivante', 'corriger', 'terminer'])->name('direct.commande');
         Route::delete('/animer/{salle}/participants/{participant}', [DirectController::class, 'retirer'])->name('direct.retirer');
+    });
+
+    // L'atelier : créer ses quiz.
+    Route::prefix('atelier')->name('atelier.')->controller(AtelierController::class)->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::get('/nouveau', 'nouveau')->name('nouveau');
+        Route::post('/', 'creer')->middleware('throttle:atelier')->name('creer');
+        Route::get('/{quiz}', 'quiz')->name('quiz');
+        Route::patch('/{quiz}', 'modifier')->name('modifier');
+        Route::post('/{quiz}/propositions', 'proposer')->middleware('throttle:atelier')->name('proposer');
+        Route::post('/{quiz}/questions', 'ajouterQuestion')->name('questions.ajouter');
+        Route::put('/{quiz}/questions/{question}', 'corrigerQuestion')->name('questions.corriger');
+        Route::post('/{quiz}/encre', 'encrerTout')->name('encrer-tout');
+        Route::post('/{quiz}/questions/{question}/encre', 'encrer')->name('questions.encrer');
+        Route::delete('/{quiz}/questions/{question}', 'gommer')->name('questions.gommer');
+        Route::post('/{quiz}/publier', 'publier')->name('publier');
+        Route::post('/{quiz}/depublier', 'depublier')->name('depublier');
+        Route::post('/{quiz}/catalogue', 'catalogue')->name('catalogue');
     });
 
     Route::get('/cahier', [CahierController::class, 'cahier'])->name('cahier');

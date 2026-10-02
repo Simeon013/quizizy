@@ -42,6 +42,8 @@ class AppServiceProvider extends ServiceProvider
             Limit::perMinute(10)->by('rejoindre-session|'.$r->session()->getId()),
             Limit::perMinute(120)->by('rejoindre-ip|'.$r->ip()),
         ]);
+        // Chaque génération coûte : quelques-unes par minute au plus (le quota quotidien est dans Atelier).
+        RateLimiter::for('atelier', fn (Request $r) => Limit::perMinute(4)->by('atelier|'.($r->user()?->id ?? $r->ip())));
         RateLimiter::for('connexion', fn (Request $r) => [
             Limit::perMinute(5)->by('connexion|'.mb_strtolower((string) $r->input('email')).'|'.$r->ip()),
             Limit::perMinute(20)->by('connexion-ip|'.$r->ip()),
