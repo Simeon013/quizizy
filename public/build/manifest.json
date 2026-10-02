@@ -1,10 +1,6 @@
 {
-  "_AttenteRedaction-C3__HZSr.css": {
-    "file": "assets/AttenteRedaction-C3__HZSr.css",
-    "src": "_AttenteRedaction-C3__HZSr.css"
-  },
-  "_AttenteRedaction-X1ZKCAzU.js": {
-    "file": "assets/AttenteRedaction-X1ZKCAzU.js",
+  "_AttenteRedaction-C2Nc65c_.js": {
+    "file": "assets/AttenteRedaction-C2Nc65c_.js",
     "name": "AttenteRedaction",
     "imports": [
       "__plugin-vue_export-helper-BPMp1P-7.js",
@@ -13,6 +9,10 @@
     "css": [
       "assets/AttenteRedaction-C3__HZSr.css"
     ]
+  },
+  "_AttenteRedaction-C3__HZSr.css": {
+    "file": "assets/AttenteRedaction-C3__HZSr.css",
+    "src": "_AttenteRedaction-C3__HZSr.css"
   },
   "_ChoixReponse-5_3MvjIp.js": {
     "file": "assets/ChoixReponse-5_3MvjIp.js",
@@ -148,7 +148,7 @@
     "isDynamicEntry": true
   },
   "resources/js/app.js": {
-    "file": "assets/app-BOnZrF2I.js",
+    "file": "assets/app-COwu_APp.js",
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true,
@@ -163,6 +163,8 @@
       "resources/js/pages/Atelier/Quiz.vue",
       "resources/js/pages/Auth/Connexion.vue",
       "resources/js/pages/Auth/Inscription.vue",
+      "resources/js/pages/Auth/NouveauMotDePasse.vue",
+      "resources/js/pages/Auth/Oubli.vue",
       "resources/js/pages/Bulletin.vue",
       "resources/js/pages/Cahier.vue",
       "resources/js/pages/Copie.vue",
@@ -190,7 +192,7 @@
     ]
   },
   "resources/js/pages/ARevoir.vue": {
-    "file": "assets/ARevoir-BWGfOaRY.js",
+    "file": "assets/ARevoir-9b_dNHyo.js",
     "name": "ARevoir",
     "src": "resources/js/pages/ARevoir.vue",
     "isDynamicEntry": true,
@@ -203,7 +205,7 @@
     ]
   },
   "resources/js/pages/Accueil.vue": {
-    "file": "assets/Accueil-WM45TQtA.js",
+    "file": "assets/Accueil-ChMRzf_1.js",
     "name": "Accueil",
     "src": "resources/js/pages/Accueil.vue",
     "isDynamicEntry": true,
@@ -220,7 +222,7 @@
     ]
   },
   "resources/js/pages/Atelier/Index.vue": {
-    "file": "assets/Index-DhBoiNUK.js",
+    "file": "assets/Index-B5-zX5Pr.js",
     "name": "Index",
     "src": "resources/js/pages/Atelier/Index.vue",
     "isDynamicEntry": true,
@@ -233,33 +235,33 @@
     ]
   },
   "resources/js/pages/Atelier/Nouveau.vue": {
-    "file": "assets/Nouveau-DDa8yTz_.js",
+    "file": "assets/Nouveau-CxYzahYZ.js",
     "name": "Nouveau",
     "src": "resources/js/pages/Atelier/Nouveau.vue",
     "isDynamicEntry": true,
     "imports": [
       "__plugin-vue_export-helper-BPMp1P-7.js",
-      "_AttenteRedaction-X1ZKCAzU.js"
+      "_AttenteRedaction-C2Nc65c_.js"
     ],
     "css": [
       "assets/Nouveau-CgmPQkA8.css"
     ]
   },
   "resources/js/pages/Atelier/Quiz.vue": {
-    "file": "assets/Quiz-edq8plEB.js",
+    "file": "assets/Quiz-B_lrcni_.js",
     "name": "Quiz",
     "src": "resources/js/pages/Atelier/Quiz.vue",
     "isDynamicEntry": true,
     "imports": [
       "__plugin-vue_export-helper-BPMp1P-7.js",
-      "_AttenteRedaction-X1ZKCAzU.js"
+      "_AttenteRedaction-C2Nc65c_.js"
     ],
     "css": [
       "assets/Quiz-BMcvzp5V.css"
     ]
   },
   "resources/js/pages/Auth/Connexion.vue": {
-    "file": "assets/Connexion-BbmeY03i.js",
+    "file": "assets/Connexion-AD-001Tf.js",
     "name": "Connexion",
     "src": "resources/js/pages/Auth/Connexion.vue",
     "isDynamicEntry": true,
@@ -268,11 +270,11 @@
       "resources/js/app.js"
     ],
     "css": [
-      "assets/Connexion-1Jo2AnCm.css"
+      "assets/Connexion-DjoDDgh8.css"
     ]
   },
   "resources/js/pages/Auth/Inscription.vue": {
-    "file": "assets/Inscription-Cdp_fZQg.js",
+    "file": "assets/Inscription-CG60E2Ma.js",
     "name": "Inscription",
     "src": "resources/js/pages/Auth/Inscription.vue",
     "isDynamicEntry": true,
@@ -282,6 +284,32 @@
     ],
     "css": [
       "assets/Inscription-Be4nPzvD.css"
+    ]
+  },
+  "resources/js/pages/Auth/NouveauMotDePasse.vue": {
+    "file": "assets/NouveauMotDePasse-DSl2HOyJ.js",
+    "name": "NouveauMotDePasse",
+    "src": "resources/js/pages/Auth/NouveauMotDePasse.vue",
+    "isDynamicEntry": true,
+    "imports": [
+      "__plugin-vue_export-helper-BPMp1P-7.js",
+      "resources/js/app.js"
+    ],
+    "css": [
+      "assets/NouveauMotDePasse-CL9hvX5T.css"
+    ]
+  },
+  "resources/js/pages/Auth/Oubli.vue": {
+    "file": "assets/Oubli-7InLxVur.js",
+    "name": "Oubli",
+    "src": "resources/js/pages/Auth/Oubli.vue",
+    "isDynamicEntry": true,
+    "imports": [
+      "__plugin-vue_export-helper-BPMp1P-7.js",
+      "resources/js/app.js"
+    ],
+    "css": [
+      "assets/Oubli-C_gIuwyT.css"
     ]
   },
   "resources/js/pages/Bulletin.vue": {
@@ -298,7 +326,7 @@
     ]
   },
   "resources/js/pages/Cahier.vue": {
-    "file": "assets/Cahier-CPjICdQF.js",
+    "file": "assets/Cahier-M5H0y4rH.js",
     "name": "Cahier",
     "src": "resources/js/pages/Cahier.vue",
     "isDynamicEntry": true,
@@ -312,7 +340,7 @@
     ]
   },
   "resources/js/pages/Copie.vue": {
-    "file": "assets/Copie-DY-4ibBO.js",
+    "file": "assets/Copie-lXykCbCy.js",
     "name": "Copie",
     "src": "resources/js/pages/Copie.vue",
     "isDynamicEntry": true,
@@ -330,7 +358,7 @@
     ]
   },
   "resources/js/pages/Direct/Ecran.vue": {
-    "file": "assets/Ecran-CxXhl1dS.js",
+    "file": "assets/Ecran-CBQ84Y5k.js",
     "name": "Ecran",
     "src": "resources/js/pages/Direct/Ecran.vue",
     "isDynamicEntry": true,
@@ -350,7 +378,7 @@
     ]
   },
   "resources/js/pages/Direct/Manette.vue": {
-    "file": "assets/Manette-BHH8OtZb.js",
+    "file": "assets/Manette-BnvLJwM9.js",
     "name": "Manette",
     "src": "resources/js/pages/Direct/Manette.vue",
     "isDynamicEntry": true,
@@ -365,7 +393,7 @@
     ]
   },
   "resources/js/pages/Direct/Rejoindre.vue": {
-    "file": "assets/Rejoindre-CHB5H96t.js",
+    "file": "assets/Rejoindre-BuoWi1Mf.js",
     "name": "Rejoindre",
     "src": "resources/js/pages/Direct/Rejoindre.vue",
     "isDynamicEntry": true,
@@ -378,7 +406,7 @@
     ]
   },
   "resources/js/pages/Erreur.vue": {
-    "file": "assets/Erreur-FnqvOJHL.js",
+    "file": "assets/Erreur-BsAunDZr.js",
     "name": "Erreur",
     "src": "resources/js/pages/Erreur.vue",
     "isDynamicEntry": true,
@@ -415,7 +443,7 @@
     ]
   },
   "resources/js/pages/Partie.vue": {
-    "file": "assets/Partie-HAmU35Dh.js",
+    "file": "assets/Partie-CMWNwyQj.js",
     "name": "Partie",
     "src": "resources/js/pages/Partie.vue",
     "isDynamicEntry": true,
@@ -431,7 +459,7 @@
     ]
   },
   "resources/js/pages/Quiz.vue": {
-    "file": "assets/Quiz-B9cpH8Nu.js",
+    "file": "assets/Quiz-BvrbMBr4.js",
     "name": "Quiz",
     "src": "resources/js/pages/Quiz.vue",
     "isDynamicEntry": true,

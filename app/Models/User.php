@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Notifications\LienMotDePasse;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -32,6 +33,11 @@ class User extends Authenticatable
             'password' => 'hashed',
             'is_admin' => 'boolean',
         ];
+    }
+
+    public function sendPasswordResetNotification(#[\SensitiveParameter] $token): void
+    {
+        $this->notify(new LienMotDePasse($token));
     }
 
     /** @return HasMany<Partie, $this> */

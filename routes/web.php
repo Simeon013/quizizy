@@ -3,6 +3,7 @@
 use App\Http\Controllers\AtelierController;
 use App\Http\Controllers\Auth\ConnexionController;
 use App\Http\Controllers\Auth\InscriptionController;
+use App\Http\Controllers\Auth\MotDePasseController;
 use App\Http\Controllers\CahierController;
 use App\Http\Controllers\CatalogueController;
 use App\Http\Controllers\DirectController;
@@ -76,4 +77,9 @@ Route::middleware('guest')->group(function () {
     Route::post('/connexion', [ConnexionController::class, 'store'])->middleware('throttle:connexion');
     Route::get('/inscription', [InscriptionController::class, 'create'])->name('inscription');
     Route::post('/inscription', [InscriptionController::class, 'store'])->middleware('throttle:inscription');
+
+    Route::get('/mot-de-passe-oublie', [MotDePasseController::class, 'oubli'])->name('mot-de-passe.oubli');
+    Route::post('/mot-de-passe-oublie', [MotDePasseController::class, 'envoyer'])->middleware('throttle:oubli');
+    Route::get('/mot-de-passe/{jeton}', [MotDePasseController::class, 'formulaire'])->name('mot-de-passe.nouveau');
+    Route::post('/mot-de-passe', [MotDePasseController::class, 'enregistrer'])->middleware('throttle:oubli')->name('mot-de-passe.enregistrer');
 });

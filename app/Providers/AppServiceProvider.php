@@ -44,6 +44,11 @@ class AppServiceProvider extends ServiceProvider
         ]);
         // Chaque génération coûte : quelques-unes par minute au plus (le quota quotidien est dans Atelier).
         RateLimiter::for('atelier', fn (Request $r) => Limit::perMinute(4)->by('atelier|'.($r->user()?->id ?? $r->ip())));
+        // Chaque demande envoie un email : peu par minute, et un plafond par jour.
+        RateLimiter::for('oubli', fn (Request $r) => [
+            Limit::perMinute(3)->by('oubli-minute|'.$r->ip()),
+            Limit::perDay(20)->by('oubli-jour|'.$r->ip()),
+        ]);
         RateLimiter::for('connexion', fn (Request $r) => [
             Limit::perMinute(5)->by('connexion|'.mb_strtolower((string) $r->input('email')).'|'.$r->ip()),
             Limit::perMinute(20)->by('connexion-ip|'.$r->ip()),

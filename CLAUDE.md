@@ -68,6 +68,15 @@ Tout compte peut créer ses quiz (`/atelier`) : à partir d'un **texte collé**,
 - **Visibilité** : un quiz d'atelier publié se joue par son lien (solo et direct) ; seul un administrateur le met **au catalogue** (`quiz.au_catalogue`, intercalaires). Un brouillon n'est jouable que par son auteur, pour l'essayer.
 - Une question **déjà jouée ne se gomme pas** (les réponses des joueurs partiraient en cascade) : on la corrige.
 
+## Mot de passe oublié (3 octobre 2026)
+
+Mécanisme intégré de Laravel (`Password::sendResetLink` / `Password::reset`, table `password_reset_tokens`) : lien à usage unique, valable 60 minutes, un seul envoi par adresse et par minute. Pages `Auth/Oubli` et `Auth/NouveauMotDePasse`, email `App\Notifications\LienMotDePasse` (envoi synchrone, pas de file).
+
+- **Même réponse que l'adresse ait un cahier ou non** (« Si un cahier existe à cette adresse… ») : sinon n'importe qui saurait quelles adresses sont inscrites. Limite `oubli` : 3 demandes par minute et 20 par jour et par IP.
+- Après le changement : connexion directe au cahier, **et toutes les autres sessions du compte sont fermées** (table `sessions`), au cas où quelqu'un connaissait l'ancien mot de passe.
+- Emails aux couleurs du cahier : gabarits publiés dans `resources/views/vendor/mail/html` (papier quadrillé, marge rouge, bouton encre), polices système (les messageries ignorent les polices web). Phrases anglaises des notifications traduites dans `lang/fr.json`.
+- **L'envoi réel n'est pas configuré** : `MAIL_MAILER=log` écrit les emails dans `storage/logs/laravel.log`. À régler (`MAIL_*`) avant la mise en ligne.
+
 ## Contenu
 
 `database/seeders/contenu/*.php` : une matière par fichier, **le premier choix de chaque question est le bon** (mélangé à l'affichage). `ContenuSeeder` met à jour par slug et peut tourner en production ; il ne remplace jamais les questions d'un quiz déjà joué (la suppression effacerait les réponses en cascade). Chaque question a 4 choix, une explication et un indice : un test le vérifie. **Aucun chiffre ni fait sans être sûr** : une phrase non vérifiée (« popularisée par Baudelaire ») a été retirée.
@@ -92,4 +101,5 @@ Vérifier le rendu à 375 et 1280 px, en clair et en sombre, sans débordement h
 1. **Fait** : socle, mode solo complet (matières, partie, correction, copie, À revoir, bulletin, gommettes, série de jours), comptes.
 2. **Fait** : mode en direct (voir plus haut). À envisager : Pusher si l'interrogation régulière devient trop lourde pour l'hébergement (au-delà de quelques dizaines de joueurs), limites de l'offre gratuite à vérifier.
 3. **Fait** : l'atelier (voir plus haut). Jamais essayé avec une vraie clé d'API dans cette session : la qualité des questions proposées reste à juger sur de vrais textes.
-4. Mot de passe oublié (demande un envoi d'emails configuré), images de partage, administration.
+4. **Fait** : mot de passe oublié (voir plus haut ; l'envoi d'emails reste à configurer à la mise en ligne).
+5. Images de partage, administration.

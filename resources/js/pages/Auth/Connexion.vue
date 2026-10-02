@@ -20,6 +20,7 @@ const envoyer = () => form.post('/connexion', { onFinish: () => form.reset('pass
             <label class="etiquette-champ" for="password">Mot de passe</label>
             <input id="password" v-model="form.password" class="champ" type="password" autocomplete="current-password" required />
             <p v-if="form.errors.password" class="note-rouge" role="alert">{{ form.errors.password }}</p>
+            <Link href="/mot-de-passe-oublie" class="lien oubli">Mot de passe oublié ?</Link>
 
             <label class="souvenir"><input v-model="form.souvenir" type="checkbox" /> Rester connecté sur cet appareil</label>
 
@@ -55,6 +56,10 @@ const envoyer = () => form.post('/connexion', { onFinish: () => form.reset('pass
 }
 .etiquette-champ {
     margin-top: 8px;
+}
+.oubli {
+    justify-self: start;
+    font-size: 15px;
 }
 .souvenir {
     display: flex;
