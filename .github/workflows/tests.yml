@@ -1,53 +1,54 @@
-name: tests
+name: Tests
 
 on:
   push:
-    branches:
-      - develop
-      - main
   pull_request:
-    branches:
-      - develop
-      - main
+
+permissions:
+  contents: read
 
 jobs:
-  ci:
+  tests:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - name: Récupération du code
+        uses: actions/checkout@v5
+        with:
+          persist-credentials: false
 
-      - name: Setup PHP
+      - name: PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: 8.4
-          tools: composer:v2
-          coverage: xdebug
+          php-version: '8.3'
+          extensions: dom, curl, libxml, mbstring, zip, pdo, sqlite, pdo_sqlite
+          coverage: none
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: 'npm'
+      - name: Dépendances Composer
+        run: composer install --prefer-dist --no-interaction --no-progress --no-scripts
 
-      - name: Install Node Dependencies
-        run: npm ci
+      - name: Environnement
+        run: cp .env.example .env && php artisan key:generate
 
-      - name: Install Dependencies
-        run: composer install --no-interaction --prefer-dist --optimize-autoloader
+      - name: Formatage (Pint)
+        run: ./vendor/bin/pint --test
 
-      - name: Copy Environment File
-        run: cp .env.example .env
-
-      - name: Generate Application Key
-        run: php artisan key:generate
-
-      - name: Publish Ziggy Configuration
-        run: php artisan ziggy:generate
-
-      - name: Build Assets
-        run: npm run build
-
-      - name: Tests
+      - name: Tests (Pest)
         run: ./vendor/bin/pest
+
+      - name: Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      # public/build est versionné (un hébergement mutualisé n'a pas Node) :
+      # il doit correspondre exactement aux sources.
+      - name: public/build à jour
+        run: |
+          npm ci
+          npm run build
+          if [ -n "$(git status --porcelain public/build)" ]; then
+            git status --short public/build
+            echo "public/build n'est pas à jour : lancez npm run build et committez le résultat."
+            exit 1
+          fi

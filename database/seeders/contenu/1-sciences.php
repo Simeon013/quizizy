@@ -1,0 +1,57 @@
+<?php
+
+// Le premier choix de chaque question est le bon : l'ordre est mélangé à l'affichage.
+return [
+    'nom' => 'Sciences',
+    'slug' => 'sciences',
+    'description' => 'Le corps humain, la Terre et le ciel au-dessus de nos têtes.',
+    'onglet' => 'ciel',
+    'quiz' => [
+        [
+            'titre' => 'Le corps humain',
+            'slug' => 'le-corps-humain',
+            'description' => 'Os, organes et sens : ce qui se passe sous la peau.',
+            'questions' => [
+                ['Combien d\'os compte le squelette d\'un adulte ?', ['206', '186', '250', '300'],
+                    'Un adulte compte 206 os. Un nouveau-né en a davantage : certains se soudent entre eux en grandissant.', 'Un peu plus de 200.'],
+                ['Quel organe pompe le sang dans tout le corps ?', ['Le cœur', 'Les poumons', 'Le foie', 'Les reins'],
+                    'Le cœur est un muscle qui bat environ 100 000 fois par jour pour faire circuler le sang.', 'Il bat sans que tu y penses.'],
+                ['Quel est le plus grand organe du corps humain ?', ['La peau', 'Le foie', 'Le cerveau', 'L\'intestin grêle'],
+                    'La peau est un organe à part entière. Chez un adulte, elle couvre environ 2 m².', 'Tu la vois tous les jours.'],
+                ['Quel gaz les poumons font-ils passer dans le sang ?', ['L\'oxygène', 'Le dioxyde de carbone', 'L\'azote', 'L\'hélium'],
+                    'À chaque inspiration, l\'oxygène passe des alvéoles des poumons au sang. Le dioxyde de carbone fait le chemin inverse et part à l\'expiration.', 'Sans lui, pas de respiration.'],
+                ['Où se trouve le fémur ?', ['Dans la cuisse', 'Dans le bras', 'Dans le dos', 'Dans le crâne'],
+                    'Le fémur est l\'os de la cuisse. C\'est le plus long os du corps humain.', 'C\'est le plus long os du corps.'],
+                ['Combien de dents compte la denture complète d\'un adulte ?', ['32', '28', '24', '36'],
+                    'Un adulte a 32 dents en comptant les quatre dents de sagesse. Un enfant a 20 dents de lait.', 'Les dents de sagesse comptent.'],
+                ['Quel sens dépend des papilles ?', ['Le goût', 'L\'odorat', 'Le toucher', 'L\'ouïe'],
+                    'Les papilles, surtout présentes sur la langue, abritent les bourgeons du goût.', 'Elles sont sur la langue.'],
+                ['Quelle partie du sang transporte l\'oxygène ?', ['Les globules rouges', 'Les globules blancs', 'Les plaquettes', 'Le plasma'],
+                    'Les globules rouges contiennent l\'hémoglobine, qui fixe l\'oxygène. Les globules blancs défendent le corps, les plaquettes arrêtent les saignements.', 'Ils donnent sa couleur au sang.'],
+            ],
+        ],
+        [
+            'titre' => 'L\'espace et la Terre',
+            'slug' => 'l-espace-et-la-terre',
+            'description' => 'Planètes, étoiles et marées : un tour du système solaire.',
+            'questions' => [
+                ['Quelle planète est la plus proche du Soleil ?', ['Mercure', 'Vénus', 'Mars', 'La Terre'],
+                    'Mercure est la planète la plus proche du Soleil, et aussi la plus petite du système solaire.', 'C\'est aussi la plus petite.'],
+                ['Quelle planète est surnommée « la planète rouge » ?', ['Mars', 'Jupiter', 'Vénus', 'Saturne'],
+                    'Le sol de Mars est riche en oxyde de fer, autrement dit en rouille : c\'est ce qui lui donne sa couleur.', 'Son sol est couvert de rouille.'],
+                ['Combien de temps la Terre met-elle pour faire le tour du Soleil ?', ['Environ 365 jours', '24 heures', 'Environ 30 jours', 'Environ 10 ans'],
+                    'La Terre fait le tour du Soleil en un peu plus de 365 jours. Ces quelques heures en trop expliquent l\'année bissextile, tous les quatre ans.', 'C\'est la durée d\'une année.'],
+                ['Quelle est la plus grande planète du système solaire ?', ['Jupiter', 'Saturne', 'Neptune', 'La Terre'],
+                    'Jupiter est une géante gazeuse : on pourrait y loger plus de 1 000 Terres.', 'Une géante gazeuse.'],
+                ['Qu\'est-ce que le Soleil ?', ['Une étoile', 'Une planète', 'Une comète', 'Un satellite'],
+                    'Le Soleil est une étoile, comme celles que l\'on voit la nuit. Elle nous paraît bien plus grosse parce qu\'elle est beaucoup plus proche.', 'Il brille de sa propre lumière.'],
+                ['Combien de planètes compte le système solaire ?', ['8', '9', '7', '10'],
+                    'Le système solaire compte 8 planètes. Pluton a été reclassée « planète naine » en 2006.', 'Pluton ne compte plus.'],
+                ['Quel astre provoque surtout les marées ?', ['La Lune', 'Le Soleil', 'Mars', 'Vénus'],
+                    'L\'attraction de la Lune soulève les océans. Le Soleil y contribue aussi, mais moins.', 'Elle tourne autour de la Terre.'],
+                ['Comment s\'appelle notre galaxie ?', ['La Voie lactée', 'Andromède', 'La Grande Ourse', 'Orion'],
+                    'Nous vivons dans la Voie lactée. Andromède est la grande galaxie voisine. La Grande Ourse et Orion sont des constellations.', 'Son nom évoque le lait.'],
+            ],
+        ],
+    ],
+];

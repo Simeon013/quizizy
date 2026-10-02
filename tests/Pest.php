@@ -1,47 +1,35 @@
 <?php
 
-/*
-|--------------------------------------------------------------------------
-| Test Case
-|--------------------------------------------------------------------------
-|
-| The closure you provide to your test functions is always bound to a specific PHPUnit test
-| case class. By default, that class is "PHPUnit\Framework\TestCase". Of course, you may
-| need to change it using the "pest()" function to bind a different classes or traits.
-|
-*/
+use App\Models\Choix;
+use App\Models\Partie;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Testing\TestResponse;
+use Tests\TestCase;
 
-pest()->extend(Tests\TestCase::class)
-    ->use(Illuminate\Foundation\Testing\RefreshDatabase::class)
-    ->in('Feature');
+pest()->extend(TestCase::class)->use(RefreshDatabase::class)->in('Feature');
+pest()->extend(TestCase::class)->in('Unit');
 
-/*
-|--------------------------------------------------------------------------
-| Expectations
-|--------------------------------------------------------------------------
-|
-| When you're writing tests, you often need to check that values meet certain conditions. The
-| "expect()" function gives you access to a set of "expectations" methods that you can use
-| to assert different things. Of course, you may extend the Expectation API at any time.
-|
-*/
-
-expect()->extend('toBeOne', function () {
-    return $this->toBe(1);
-});
-
-/*
-|--------------------------------------------------------------------------
-| Functions
-|--------------------------------------------------------------------------
-|
-| While Pest is very powerful out-of-the-box, you may have some testing code specific to your
-| project that you don't want to repeat in every file. Here you can also expose helpers as
-| global functions to help you to reduce the number of lines of code in your test files.
-|
-*/
-
-function something()
+/**
+ * Lance une partie sur le premier quiz du contenu et renvoie son identifiant.
+ */
+function demarrerPartie(string $slug = 'le-corps-humain'): string
 {
-    // ..
+    $reponse = test()->post("/quiz/{$slug}/parties");
+    $reponse->assertRedirect();
+
+    return basename(parse_url($reponse->headers->get('Location'), PHP_URL_PATH));
+}
+
+/** Répond à la question en cours, juste ou faux. */
+function repondre(string $partieId, bool $juste = true): TestResponse
+{
+    $partie = Partie::findOrFail($partieId);
+    if ($partie->question_affichee_le === null) {
+        test()->postJson("/parties/{$partieId}/question")->assertOk();
+    }
+    $partie->refresh();
+    $questionId = $partie->questionEnCoursId();
+    $choix = Choix::where('question_id', $questionId)->where('juste', $juste)->firstOrFail();
+
+    return test()->postJson("/parties/{$partieId}/reponse", ['question_id' => $questionId, 'choix_id' => $choix->id]);
 }

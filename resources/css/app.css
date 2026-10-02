@@ -1,167 +1,376 @@
 @import 'tailwindcss';
+@import '@fontsource/permanent-marker/latin.css';
+@import '@fontsource/atkinson-hyperlegible/latin-400.css';
+@import '@fontsource/atkinson-hyperlegible/latin-700.css';
+@import '@fontsource/caveat/latin-700.css';
 
-@import 'tw-animate-css';
-
-@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
-@source '../../storage/framework/views/*.php';
-
-@custom-variant dark (&:is(.dark *));
-
-@theme inline {
-    --font-sans: Instrument Sans, ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
-
-    --radius-lg: var(--radius);
-    --radius-md: calc(var(--radius) - 2px);
-    --radius-sm: calc(var(--radius) - 4px);
-
-    --color-background: var(--background);
-    --color-foreground: var(--foreground);
-
-    --color-card: var(--card);
-    --color-card-foreground: var(--card-foreground);
-
-    --color-popover: var(--popover);
-    --color-popover-foreground: var(--popover-foreground);
-
-    --color-primary: var(--primary);
-    --color-primary-foreground: var(--primary-foreground);
-
-    --color-secondary: var(--secondary);
-    --color-secondary-foreground: var(--secondary-foreground);
-
-    --color-muted: var(--muted);
-    --color-muted-foreground: var(--muted-foreground);
-
-    --color-accent: var(--accent);
-    --color-accent-foreground: var(--accent-foreground);
-
-    --color-destructive: var(--destructive);
-    --color-destructive-foreground: var(--destructive-foreground);
-
-    --color-border: var(--border);
-    --color-input: var(--input);
-    --color-ring: var(--ring);
-
-    --color-chart-1: var(--chart-1);
-    --color-chart-2: var(--chart-2);
-    --color-chart-3: var(--chart-3);
-    --color-chart-4: var(--chart-4);
-    --color-chart-5: var(--chart-5);
-
-    --color-sidebar: var(--sidebar-background);
-    --color-sidebar-foreground: var(--sidebar-foreground);
-    --color-sidebar-primary: var(--sidebar-primary);
-    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-    --color-sidebar-accent: var(--sidebar-accent);
-    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-    --color-sidebar-border: var(--sidebar-border);
-    --color-sidebar-ring: var(--sidebar-ring);
-}
+@source '../views/**/*.blade.php';
+@source '../js/**/*.vue';
 
 /*
-  The default border color has changed to `currentColor` in Tailwind CSS v4,
-  so we've added these compatibility styles to make sure everything still
-  looks the same as it did with Tailwind CSS v3.
-
-  If we ever want to remove these styles, we need to add an explicit border
-  color utility to any element that depends on these defaults.
-*/
-@layer base {
-    *,
-    ::after,
-    ::before,
-    ::backdrop,
-    ::file-selector-button {
-        border-color: var(--color-gray-200, currentColor);
-    }
-}
-
-@layer utilities {
-    body,
-    html {
-        --font-sans:
-            'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
-    }
-}
-
+ * Charte « Carnet » (validée le 2/10/2026) : un cahier d'élève curieux.
+ * Chaque couleur est une fourniture avec un seul rôle :
+ *   encre = texte et traits · graphite = provisoire · surligne = à retenir
+ *   rouge = corriger (barrer, entourer, noter) · vert = encourager, expliquer
+ * Le rouge ne s'affiche jamais sans une note verte à côté.
+ * Deux thèmes : le cahier (clair) et le cahier de nuit (sombre), mêmes rôles.
+ */
 :root {
-    --background: hsl(0 0% 100%);
-    --foreground: hsl(0 0% 3.9%);
-    --card: hsl(0 0% 100%);
-    --card-foreground: hsl(0 0% 3.9%);
-    --popover: hsl(0 0% 100%);
-    --popover-foreground: hsl(0 0% 3.9%);
-    --primary: hsl(0 0% 9%);
-    --primary-foreground: hsl(0 0% 98%);
-    --secondary: hsl(0 0% 92.1%);
-    --secondary-foreground: hsl(0 0% 9%);
-    --muted: hsl(0 0% 96.1%);
-    --muted-foreground: hsl(0 0% 45.1%);
-    --accent: hsl(0 0% 96.1%);
-    --accent-foreground: hsl(0 0% 9%);
-    --destructive: hsl(0 84.2% 60.2%);
-    --destructive-foreground: hsl(0 0% 98%);
-    --border: hsl(0 0% 92.8%);
-    --input: hsl(0 0% 89.8%);
-    --ring: hsl(0 0% 3.9%);
-    --chart-1: hsl(12 76% 61%);
-    --chart-2: hsl(173 58% 39%);
-    --chart-3: hsl(197 37% 24%);
-    --chart-4: hsl(43 74% 66%);
-    --chart-5: hsl(27 87% 67%);
-    --radius: 0.5rem;
-    --sidebar-background: hsl(0 0% 98%);
-    --sidebar-foreground: hsl(240 5.3% 26.1%);
-    --sidebar-primary: hsl(0 0% 10%);
-    --sidebar-primary-foreground: hsl(0 0% 98%);
-    --sidebar-accent: hsl(0 0% 94%);
-    --sidebar-accent-foreground: hsl(0 0% 30%);
-    --sidebar-border: hsl(0 0% 91%);
-    --sidebar-ring: hsl(217.2 91.2% 59.8%);
-    --sidebar: hsl(0 0% 98%);
+    --papier: #fcfdff;
+    --quadrille: #dde6f6;
+    --marge: #f1a3a3;
+    --carte: #ffffff;
+    --encre: #1e2b5c;
+    --graphite: #5f6480;
+    --rouge: #c92a25;
+    --vert: #0f7a46;
+    --surligne: #f3ff3d;
+    --couverture: #2c47ae;
+    --ombre: #1e2b5c;
+    --postit: #fff27a;
+    --encre-fixe: #1e2b5c; /* texte posé sur une couleur fixe (onglet, post-it, gommette) */
+    color-scheme: light;
 }
 
-.dark {
-    --background: hsl(0 0% 3.9%);
-    --foreground: hsl(0 0% 98%);
-    --card: hsl(0 0% 3.9%);
-    --card-foreground: hsl(0 0% 98%);
-    --popover: hsl(0 0% 3.9%);
-    --popover-foreground: 0 0% 98%;
-    --primary: hsl(0 0% 98%);
-    --primary-foreground: hsl(0 0% 9%);
-    --secondary: hsl(0 0% 14.9%);
-    --secondary-foreground: hsl(0 0% 98%);
-    --muted: hsl(0 0% 16.08%);
-    --muted-foreground: hsl(0 0% 63.9%);
-    --accent: hsl(0 0% 14.9%);
-    --accent-foreground: hsl(0 0% 98%);
-    --destructive: hsl(0 84% 60%);
-    --destructive-foreground: hsl(0 0% 98%);
-    --border: hsl(0 0% 14.9%);
-    --input: hsl(0 0% 14.9%);
-    --ring: hsl(0 0% 83.1%);
-    --chart-1: hsl(220 70% 50%);
-    --chart-2: hsl(160 60% 45%);
-    --chart-3: hsl(30 80% 55%);
-    --chart-4: hsl(280 65% 60%);
-    --chart-5: hsl(340 75% 55%);
-    --sidebar-background: hsl(0 0% 7%);
-    --sidebar-foreground: hsl(0 0% 95.9%);
-    --sidebar-primary: hsl(360, 100%, 100%);
-    --sidebar-primary-foreground: hsl(0 0% 100%);
-    --sidebar-accent: hsl(0 0% 15.9%);
-    --sidebar-accent-foreground: hsl(240 4.8% 95.9%);
-    --sidebar-border: hsl(0 0% 15.9%);
-    --sidebar-ring: hsl(217.2 91.2% 59.8%);
-    --sidebar: hsl(240 5.9% 10%);
-}
-
-@layer base {
-    * {
-        @apply border-border outline-ring/50;
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme='clair']) {
+        --papier: #121834;
+        --quadrille: #1f2a52;
+        --marge: #6e3346;
+        --carte: #1a2246;
+        --encre: #e7ecff;
+        --graphite: #a2aad0;
+        --rouge: #ff7a72;
+        --vert: #5ddc9c;
+        --surligne: rgb(243 255 61 / 0.3);
+        --couverture: #3552c4;
+        --ombre: #050817;
+        color-scheme: dark;
     }
-    body {
-        @apply bg-background text-foreground;
+}
+
+:root[data-theme='sombre'] {
+    --papier: #121834;
+    --quadrille: #1f2a52;
+    --marge: #6e3346;
+    --carte: #1a2246;
+    --encre: #e7ecff;
+    --graphite: #a2aad0;
+    --rouge: #ff7a72;
+    --vert: #5ddc9c;
+    --surligne: rgb(243 255 61 / 0.3);
+    --couverture: #3552c4;
+    --ombre: #050817;
+    color-scheme: dark;
+}
+
+@theme inline {
+    --font-feutre: 'Permanent Marker', 'Comic Sans MS', cursive;
+    --font-sans: 'Atkinson Hyperlegible', ui-sans-serif, system-ui, sans-serif;
+    --font-main: 'Caveat', 'Segoe Print', cursive;
+
+    --color-papier: var(--papier);
+    --color-quadrille: var(--quadrille);
+    --color-carte: var(--carte);
+    --color-encre: var(--encre);
+    --color-graphite: var(--graphite);
+    --color-rouge: var(--rouge);
+    --color-vert: var(--vert);
+    --color-surligne: var(--surligne);
+    --color-couverture: var(--couverture);
+    --color-marge: var(--marge);
+}
+
+/* ---------- Le papier ---------- */
+html {
+    -webkit-text-size-adjust: 100%;
+}
+body {
+    background-color: var(--papier);
+    background-image:
+        linear-gradient(var(--quadrille) 1px, transparent 1px),
+        linear-gradient(90deg, var(--quadrille) 1px, transparent 1px);
+    background-size: 24px 24px;
+    color: var(--encre);
+    font-family: var(--font-sans);
+    font-size: 17px;
+    line-height: 1.55;
+}
+::selection {
+    background: var(--surligne);
+    color: var(--encre);
+}
+:focus-visible {
+    outline: 3px dashed var(--rouge);
+    outline-offset: 3px;
+}
+
+/* La page de cahier : marge rouge à gauche, dès que la largeur le permet. */
+.page {
+    position: relative;
+    margin-inline: auto;
+    max-width: 1140px;
+    padding-inline: 16px;
+}
+@media (min-width: 760px) {
+    .page {
+        padding-inline: 76px 32px;
+    }
+    .page::before {
+        content: '';
+        position: absolute;
+        inset-block: 0;
+        left: 52px;
+        width: 2px;
+        background: var(--marge);
+    }
+}
+
+/* ---------- Rôles typographiques : jamais une taille au cas par cas ---------- */
+.t-geant {
+    font-family: var(--font-feutre);
+    font-size: clamp(54px, 10vw, 112px);
+    line-height: 0.95;
+}
+.t-page {
+    font-family: var(--font-feutre);
+    font-size: clamp(34px, 5.4vw, 54px);
+    line-height: 1.05;
+    text-wrap: balance;
+}
+.t-section {
+    font-family: var(--font-feutre);
+    font-size: clamp(26px, 3.6vw, 36px);
+    line-height: 1.1;
+    text-wrap: balance;
+}
+.t-question {
+    font-family: var(--font-feutre);
+    font-size: clamp(23px, 3.6vw, 34px);
+    line-height: 1.18;
+    text-wrap: balance;
+}
+.t-carte {
+    font-weight: 700;
+    font-size: 19px;
+    line-height: 1.25;
+}
+.chapeau {
+    font-size: clamp(18px, 2.2vw, 21px);
+    max-width: 60ch;
+}
+.surtitre {
+    font-family: var(--font-main);
+    font-weight: 700;
+    font-size: 24px;
+    line-height: 1;
+    color: var(--rouge);
+}
+.note-verte,
+.note-rouge,
+.note-main {
+    font-family: var(--font-main);
+    font-weight: 700;
+    font-size: 23px;
+    line-height: 1.12;
+}
+.note-verte {
+    color: var(--vert);
+}
+.note-rouge {
+    color: var(--rouge);
+}
+.discret {
+    color: var(--graphite);
+    font-size: 15px;
+}
+.fluo {
+    background: linear-gradient(transparent 22%, var(--surligne) 22%, var(--surligne) 88%, transparent 88%);
+    padding-inline: 0.1em;
+}
+.chiffres {
+    font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Objets du cahier ---------- */
+
+/* Une feuille : bord tracé à main levée, ombre franche. */
+.feuille {
+    background: var(--carte);
+    border: 2px solid var(--encre);
+    border-radius: 10px 14px 9px 13px / 13px 9px 14px 10px;
+    box-shadow: 5px 5px 0 var(--ombre);
+}
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 48px;
+    padding: 10px 20px;
+    font: 700 16px var(--font-sans);
+    color: var(--encre);
+    background: var(--carte);
+    border: 2px solid var(--encre);
+    border-radius: 12px 15px 11px 14px / 14px 11px 15px 12px;
+    box-shadow: 3px 3px 0 var(--ombre);
+    cursor: pointer;
+    text-decoration: none;
+    transition:
+        transform 0.15s,
+        box-shadow 0.15s;
+}
+.btn:hover {
+    transform: translate(-1px, -1px);
+    box-shadow: 5px 5px 0 var(--ombre);
+}
+.btn:active {
+    transform: translate(2px, 2px);
+    box-shadow: 1px 1px 0 var(--ombre);
+}
+.btn[disabled] {
+    opacity: 0.55;
+    cursor: wait;
+}
+.btn-plein {
+    background: var(--encre);
+    color: var(--papier);
+}
+.btn-discret {
+    background: transparent;
+    box-shadow: none;
+    border-style: dashed;
+}
+.lien {
+    color: inherit;
+    text-decoration: underline;
+    text-decoration-thickness: 2px;
+    text-underline-offset: 3px;
+}
+.lien:hover {
+    text-decoration-color: var(--rouge);
+}
+
+/* Le post-it : indices, messages, invitations. */
+.postit {
+    background: var(--postit);
+    color: var(--encre-fixe);
+    font-family: var(--font-main);
+    font-weight: 700;
+    font-size: 22px;
+    line-height: 1.08;
+    padding: 14px 14px 18px;
+    box-shadow: 0 10px 14px -8px rgb(0 0 0 / 0.4);
+}
+
+/* Les champs : on écrit sur une ligne du cahier. */
+.champ {
+    width: 100%;
+    min-height: 48px;
+    background: transparent;
+    border: 0;
+    border-bottom: 2px solid var(--encre);
+    padding: 8px 2px;
+    font: 400 18px var(--font-sans);
+    color: var(--encre);
+}
+.champ:focus {
+    outline: none;
+    border-bottom-color: var(--rouge);
+    background: linear-gradient(transparent 60%, var(--surligne) 60%);
+}
+.etiquette-champ {
+    font-family: var(--font-main);
+    font-weight: 700;
+    font-size: 22px;
+    line-height: 1;
+}
+
+/* Les onglets d'intercalaire : couleur fixe, texte toujours foncé. */
+.onglet {
+    color: var(--encre-fixe);
+    border: 2px solid var(--encre);
+    border-bottom: 0;
+    border-radius: 14px 14px 0 0;
+}
+
+/* ---------- Apparition au défilement (v-revele) ----------
+ * Tout est visible sans JavaScript ou avec « mouvement réduit ». */
+.js .revele {
+    opacity: 0;
+    transform: translateY(14px) rotate(-0.4deg);
+    transition:
+        opacity 0.6s ease,
+        transform 0.6s cubic-bezier(0.2, 0.9, 0.3, 1.2);
+}
+.js .revele.est-visible {
+    opacity: 1;
+    transform: none;
+}
+
+/* Le surligneur qui passe sous un mot. */
+.surligne-anime {
+    position: relative;
+    isolation: isolate;
+    display: inline-block;
+}
+.surligne-anime::after {
+    content: '';
+    position: absolute;
+    left: -3%;
+    right: -3%;
+    bottom: 8%;
+    height: 38%;
+    background: var(--surligne);
+    z-index: -1;
+    transform: skew(-8deg) scaleX(0);
+    transform-origin: left;
+    animation: surligner 1s 0.35s ease-out forwards;
+}
+@keyframes surligner {
+    to {
+        transform: skew(-8deg) scaleX(1);
+    }
+}
+
+/* Tracés au stylo (cercle, rature, coche) : dessinés trait par trait. */
+.trace {
+    stroke-dasharray: var(--longueur, 600);
+    stroke-dashoffset: var(--longueur, 600);
+    animation: tracer 0.7s ease-out forwards;
+}
+@keyframes tracer {
+    to {
+        stroke-dashoffset: 0;
+    }
+}
+
+@keyframes flotter {
+    50% {
+        transform: translateY(-6px) rotate(-2deg);
+    }
+}
+.flotte {
+    animation: flotter 3.6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+    .js .revele {
+        opacity: 1;
+        transform: none;
+    }
+    .surligne-anime::after {
+        transform: skew(-8deg) scaleX(1);
+    }
+    .trace {
+        stroke-dashoffset: 0;
     }
 }

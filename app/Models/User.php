@@ -2,58 +2,20 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Database\Factories\UserFactory;
+use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
+#[Fillable(['name', 'email', 'password'])]
+#[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
-    /** @use HasFactory<\Database\Factories\UserFactory> */
+    /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
-
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var list<string>
-     */
-    protected $fillable = [
-        'name',
-        'email',
-        'password',
-        'is_admin',
-        'avatar',
-        'total_xp',
-        'level',
-    ];
-
-    /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var list<string>
-     */
-    protected $hidden = [
-        'password',
-        'remember_token',
-    ];
-
-    /**
-     * Get the quiz sessions for the user.
-     */
-    public function quizSessions()
-    {
-        return $this->hasMany(QuizSession::class);
-    }
-
-    /**
-     * Get the user's statistics.
-     */
-    public function stat()
-    {
-        return $this->hasOne(UserStat::class);
-    }
 
     /**
      * Get the attributes that should be cast.
@@ -66,40 +28,18 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'is_admin' => 'boolean',
-            'total_xp' => 'integer',
-            'level' => 'integer',
         ];
     }
 
-    /**
-     * Get the user's responses.
-     */
-    public function responses(): HasMany
+    /** @return HasMany<Partie, $this> */
+    public function parties(): HasMany
     {
-        return $this->hasMany(UserResponse::class);
+        return $this->hasMany(Partie::class);
     }
 
-    /**
-     * Get the user's statistics.
-     */
-    public function stats(): HasMany
+    /** @return HasMany<Gommette, $this> */
+    public function gommettes(): HasMany
     {
-        return $this->hasMany(UserStat::class);
-    }
-
-    /**
-     * Get the user's answered questions.
-     */
-    public function answeredQuestions(): HasManyThrough
-    {
-        return $this->hasManyThrough(Question::class, UserResponse::class, 'user_id', 'id', 'id', 'question_id');
-    }
-
-    /**
-     * Check if the user is an admin.
-     */
-    public function isAdmin(): bool
-    {
-        return $this->is_admin === true;
+        return $this->hasMany(Gommette::class);
     }
 }

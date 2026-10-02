@@ -1,53 +1,40 @@
 <?php
 
+use App\Http\Controllers\Auth\ConnexionController;
+use App\Http\Controllers\Auth\InscriptionController;
+use App\Http\Controllers\CahierController;
+use App\Http\Controllers\CatalogueController;
+use App\Http\Controllers\PartieController;
 use Illuminate\Support\Facades\Route;
-use Inertia\Inertia;
-use App\Http\Controllers\Admin\CategoryController;
-use App\Http\Controllers\Admin\DashboardController;
-use App\Http\Controllers\Admin\QuestionController;
 
-// Page d'accueil publique
-Route::get('/', function () {
-    return Inertia::render('Welcome');
-})->name('home');
+Route::get('/', [CatalogueController::class, 'accueil'])->name('accueil');
+Route::get('/matieres', [CatalogueController::class, 'index'])->name('matieres');
+Route::get('/matieres/{matiere}', [CatalogueController::class, 'matiere'])->name('matieres.show');
+Route::get('/quiz/{quiz}', [CatalogueController::class, 'quiz'])->name('quiz.show');
 
-// Tableau de bord utilisateur
-Route::get('dashboard', function () {
-    return Inertia::render('Dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
-
-// Routes d'administration
-Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(function () {
-    // Tableau de bord
-    Route::get('/dashboard', [\App\Http\Controllers\Admin\DashboardController::class, '__invoke'])
-        ->name('dashboard');
-    
-    // Recherche globale
-    Route::get('/search', [\App\Http\Controllers\Admin\DashboardController::class, 'search'])
-        ->name('search');
-    
-    // Gestion des catégories
-    Route::resource('categories', CategoryController::class)->except(['show']);
-    
-    // Gestion des questions
-    Route::resource('questions', QuestionController::class)->except(['show']);
-    Route::post('questions/{question}/answers', [QuestionController::class, 'manageAnswers'])
-        ->name('questions.answers.manage');
-    
-    // Gestion des utilisateurs
-    Route::get('users', [\App\Http\Controllers\Admin\UserController::class, 'index'])
-        ->name('users.index');
-        
-    // Statistiques
-    Route::get('stats', [\App\Http\Controllers\Admin\StatisticController::class, 'index'])
-        ->name('stats');
-    
-    // Redirection de la racine de l'admin vers le tableau de bord
-    Route::redirect('/', '/admin/dashboard');
+// Jouer : ouvert aux invités, la partie est alors liée à leur session.
+Route::post('/quiz/{quiz}/parties', [PartieController::class, 'demarrer'])
+    ->middleware('throttle:parties')->name('parties.store');
+Route::get('/parties/{partie}', [PartieController::class, 'afficher'])->name('parties.show');
+Route::get('/parties/{partie}/copie', [PartieController::class, 'copie'])->name('parties.copie');
+Route::middleware('throttle:jeu')->group(function () {
+    Route::post('/parties/{partie}/question', [PartieController::class, 'question'])->name('parties.question');
+    Route::post('/parties/{partie}/indice', [PartieController::class, 'indice'])->name('parties.indice');
+    Route::post('/parties/{partie}/reponse', [PartieController::class, 'repondre'])->name('parties.reponse');
 });
 
-// Paramètres utilisateur
-require __DIR__.'/settings.php';
+Route::middleware('auth')->group(function () {
+    Route::get('/cahier', [CahierController::class, 'cahier'])->name('cahier');
+    Route::get('/bulletin', [CahierController::class, 'bulletin'])->name('bulletin');
+    Route::get('/a-revoir', [CahierController::class, 'aRevoir'])->name('a-revoir');
+    Route::post('/a-revoir/parties', [CahierController::class, 'reviser'])
+        ->middleware('throttle:parties')->name('a-revoir.reviser');
+    Route::post('/deconnexion', [ConnexionController::class, 'destroy'])->name('deconnexion');
+});
 
-// Authentification
-require __DIR__.'/auth.php';
+Route::middleware('guest')->group(function () {
+    Route::get('/connexion', [ConnexionController::class, 'create'])->name('connexion');
+    Route::post('/connexion', [ConnexionController::class, 'store'])->middleware('throttle:connexion');
+    Route::get('/inscription', [InscriptionController::class, 'create'])->name('inscription');
+    Route::post('/inscription', [InscriptionController::class, 'store'])->middleware('throttle:inscription');
+});
