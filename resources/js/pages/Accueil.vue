@@ -6,6 +6,7 @@ import ChoixReponse from '../composants/ChoixReponse.vue';
 import Gommette from '../composants/Gommette.vue';
 import Gribouille from '../composants/Gribouille.vue';
 import Regle from '../composants/Regle.vue';
+import Symbole from '../composants/Symbole.vue';
 
 const props = defineProps({
     matieres: { type: Array, required: true },
@@ -108,6 +109,28 @@ const etapes = [
                 </Link>
             </li>
         </ul>
+    </section>
+
+    <section class="page bloc" aria-labelledby="titre-direct">
+        <div v-revele class="feuille direct">
+            <div class="direct-texte">
+                <p class="surtitre">En classe, en famille, entre amis</p>
+                <h2 id="titre-direct" class="t-section">En direct, au tableau</h2>
+                <p>
+                    Projette un quiz sur grand écran. Chacun rejoint avec un code et répond depuis son téléphone. Après chaque question, la correction
+                    et le palmarès s'affichent pour tout le monde.
+                </p>
+                <div class="hero-actions">
+                    <Link href="/rejoindre" class="btn btn-plein">J'ai un code</Link>
+                    <Link href="/matieres" class="btn">Animer une partie</Link>
+                </div>
+            </div>
+            <div class="direct-symboles" aria-hidden="true">
+                <span v-for="(s, i) in ['triangle', 'rond', 'carre', 'etoile']" :key="s" class="direct-tuile" :class="`direct-${s}`" :style="{ animationDelay: `${i * 0.15}s` }">
+                    <Symbole :nom="s" />
+                </span>
+            </div>
+        </div>
     </section>
 
     <section class="page bloc cahier-garde" aria-labelledby="titre-garde">
@@ -268,6 +291,65 @@ const etapes = [
 }
 .intercalaire span {
     font-size: 14px;
+}
+.direct {
+    display: grid;
+    gap: 24px;
+    align-items: center;
+    padding: clamp(20px, 4vw, 34px);
+}
+@media (min-width: 800px) {
+    .direct {
+        grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+    }
+}
+.direct-texte {
+    display: grid;
+    gap: 12px;
+}
+.direct-symboles {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    max-width: 280px;
+    justify-self: center;
+    width: 100%;
+}
+.direct-tuile {
+    display: grid;
+    place-items: center;
+    aspect-ratio: 1.3;
+    color: var(--encre-fixe);
+    border: 2.5px solid var(--encre);
+    border-radius: 14px 18px 12px 16px;
+    box-shadow: 4px 4px 0 var(--ombre);
+    animation: taper 2.4s ease-in-out infinite;
+}
+.direct-tuile svg {
+    width: 44%;
+}
+.direct-triangle {
+    background: #8cc8ff;
+}
+.direct-rond {
+    background: #ffb4a2;
+}
+.direct-carre {
+    background: #b9f5c9;
+}
+.direct-etoile {
+    background: #ffe27a;
+}
+@keyframes taper {
+    0%,
+    80%,
+    100% {
+        transform: none;
+    }
+    88% {
+        transform: translate(3px, 3px);
+        box-shadow: 1px 1px 0 var(--ombre);
+    }
 }
 .cahier-garde {
     align-items: start;

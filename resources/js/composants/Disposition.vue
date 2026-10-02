@@ -14,6 +14,7 @@ watch(() => page.url, () => (menuOuvert.value = false));
 
 const liens = computed(() => [
     { href: '/matieres', texte: 'Matières' },
+    { href: '/rejoindre', texte: 'Rejoindre une partie' },
     ...(utilisateur.value
         ? [
               { href: '/cahier', texte: 'Mon cahier' },

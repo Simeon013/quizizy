@@ -1,6 +1,6 @@
 <script setup>
-import { Head, Link, router } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { Head, Link, router, usePage } from '@inertiajs/vue3';
+import { computed, ref } from 'vue';
 import Gribouille from '../composants/Gribouille.vue';
 
 const props = defineProps({
@@ -11,6 +11,8 @@ const props = defineProps({
 });
 
 const envoi = ref(false);
+const connecte = computed(() => !!usePage().props.utilisateur);
+const animer = () => router.post(`/quiz/${props.quiz.slug}/direct`);
 const commencer = () => router.post(`/quiz/${props.quiz.slug}/parties`, {}, { onStart: () => (envoi.value = true), onFinish: () => (envoi.value = false) });
 </script>
 
@@ -33,6 +35,16 @@ const commencer = () => router.post(`/quiz/${props.quiz.slug}/parties`, {}, { on
                 <button type="button" class="btn" :class="{ 'btn-plein': !enCours }" :disabled="envoi" @click="commencer">
                     {{ enCours ? 'Nouvelle copie' : 'Commencer la copie' }}
                 </button>
+            </div>
+            <div class="direct">
+                <p class="note-main">En classe ou entre amis ?</p>
+                <p v-if="connecte">
+                    Projette ce quiz au tableau : chacun répond depuis son téléphone avec un code.
+                    <button type="button" class="btn btn-discret direct-btn" @click="animer">Animer en direct</button>
+                </p>
+                <p v-else class="discret">
+                    <Link href="/connexion" class="lien">Connecte-toi</Link> pour animer ce quiz en direct sur grand écran.
+                </p>
             </div>
         </article>
         <Gribouille pose="curieux" class="garde-gribouille" />
@@ -82,13 +94,35 @@ const commencer = () => router.post(`/quiz/${props.quiz.slug}/parties`, {}, { on
     gap: 12px;
     margin-top: 6px;
 }
+.direct {
+    border-top: 2px dashed var(--quadrille);
+    padding-top: 14px;
+    width: 100%;
+    display: grid;
+    gap: 6px;
+}
+.direct-btn {
+    display: flex;
+    margin-top: 10px;
+}
 .garde-gribouille {
     width: 180px;
     height: 195px;
     justify-self: center;
 }
 @media (max-width: 859px) {
-    .garde-gribouille {
+    .direct {
+    border-top: 2px dashed var(--quadrille);
+    padding-top: 14px;
+    width: 100%;
+    display: grid;
+    gap: 6px;
+}
+.direct-btn {
+    display: flex;
+    margin-top: 10px;
+}
+.garde-gribouille {
         display: none;
     }
 }

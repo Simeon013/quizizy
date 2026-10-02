@@ -14,9 +14,9 @@ export class ErreurHttp extends Error {
     }
 }
 
-export async function envoyer(url, donnees = {}) {
+export async function envoyer(url, donnees = {}, methode = 'POST') {
     const reponse = await fetch(url, {
-        method: 'POST',
+        method: methode,
         credentials: 'same-origin',
         headers: {
             'Content-Type': 'application/json',

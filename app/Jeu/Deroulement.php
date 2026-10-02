@@ -8,9 +8,7 @@ use App\Models\Question;
 use App\Models\Quiz;
 use App\Models\Reponse;
 use App\Support\Onglets;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
-use Random\Engine\Mt19937;
 use Random\Randomizer;
 use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 use Symfony\Component\HttpKernel\Exception\UnprocessableEntityHttpException;
@@ -79,7 +77,7 @@ class Deroulement
             'onglet' => Onglets::couleur($question->quiz->matiere->onglet),
             // Ordre des choix mélangé, mais stable pour une partie donnée : recharger ne le change pas.
             // Jamais le champ `juste` ici.
-            'choix' => self::melanger($question->choix, $partie->id.$question->id)
+            'choix' => Melange::stable($question->choix, $partie->id.$question->id)
                 ->map(fn (Choix $c) => ['id' => $c->id, 'texte' => $c->texte])->values()->all(),
             'aUnIndice' => $question->indice !== null,
             'indice' => $partie->indice_pris ? $question->indice : null,
@@ -179,18 +177,5 @@ class Deroulement
                 'termine' => $termine,
             ];
         });
-    }
-
-    /**
-     * @template T
-     *
-     * @param  Collection<int, T>  $elements
-     * @return Collection<int, T>
-     */
-    private static function melanger($elements, string $graine)
-    {
-        $hasard = new Randomizer(new Mt19937(crc32($graine)));
-
-        return collect($hasard->shuffleArray($elements->all()));
     }
 }

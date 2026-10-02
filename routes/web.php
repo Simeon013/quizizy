@@ -4,6 +4,7 @@ use App\Http\Controllers\Auth\ConnexionController;
 use App\Http\Controllers\Auth\InscriptionController;
 use App\Http\Controllers\CahierController;
 use App\Http\Controllers\CatalogueController;
+use App\Http\Controllers\DirectController;
 use App\Http\Controllers\PartieController;
 use Illuminate\Support\Facades\Route;
 
@@ -23,7 +24,26 @@ Route::middleware('throttle:jeu')->group(function () {
     Route::post('/parties/{partie}/reponse', [PartieController::class, 'repondre'])->name('parties.reponse');
 });
 
+// Mode en direct, côté joueur : pas de compte, un pseudo suffit.
+Route::get('/rejoindre', [DirectController::class, 'formulaire'])->name('direct.rejoindre');
+Route::post('/rejoindre', [DirectController::class, 'rejoindre'])->middleware('throttle:rejoindre');
+Route::get('/direct/{salle}', [DirectController::class, 'manette'])->name('direct.manette');
+Route::middleware('throttle:direct')->group(function () {
+    Route::get('/direct/{salle}/etat', [DirectController::class, 'etatManette'])->name('direct.etat');
+    Route::post('/direct/{salle}/reponse', [DirectController::class, 'repondre'])->name('direct.reponse');
+});
+
 Route::middleware('auth')->group(function () {
+    // Mode en direct, côté animateur.
+    Route::post('/quiz/{quiz}/direct', [DirectController::class, 'ouvrir'])->middleware('throttle:parties')->name('direct.ouvrir');
+    Route::get('/animer/{salle}', [DirectController::class, 'ecran'])->name('direct.ecran');
+    Route::middleware('throttle:direct')->group(function () {
+        Route::get('/animer/{salle}/etat', [DirectController::class, 'etatEcran'])->name('direct.ecran.etat');
+        Route::post('/animer/{salle}/{action}', [DirectController::class, 'commande'])
+            ->whereIn('action', ['suivante', 'corriger', 'terminer'])->name('direct.commande');
+        Route::delete('/animer/{salle}/participants/{participant}', [DirectController::class, 'retirer'])->name('direct.retirer');
+    });
+
     Route::get('/cahier', [CahierController::class, 'cahier'])->name('cahier');
     Route::get('/bulletin', [CahierController::class, 'bulletin'])->name('bulletin');
     Route::get('/a-revoir', [CahierController::class, 'aRevoir'])->name('a-revoir');

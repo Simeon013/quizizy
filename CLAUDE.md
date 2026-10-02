@@ -43,6 +43,19 @@ Laravel 13 (PHP 8.3), Inertia 3 + Vue 3.5, Tailwind 4 (plugin Vite), Vite 8, Pes
 
 Parties en ULID : l'adresse ne se devine pas. Limites de débit nommées dans `AppServiceProvider`, **une clé `by()` par limite** (deux limites de même clé partagent leur compteur).
 
+## Mode en direct (`app/Direct`, 3 octobre 2026)
+
+Un animateur (compte obligatoire) projette un quiz ; les joueurs rejoignent sans compte, avec un **code à 6 chiffres** et un pseudo, depuis leur téléphone (`/rejoindre`, ou le QR code du grand écran). Écrans : `pages/Direct/Ecran.vue` (grand écran, sans la mise en page du site), `Manette.vue` (téléphone), `Rejoindre.vue`.
+
+- États d'une salle : `attente` → `question` → `correction` → … → `terminee`. `Animation` les fait avancer, `Vues` dit ce que voit chaque écran. Pendant la question, **ni le téléphone ni le grand écran ne reçoivent la bonne réponse**, et le téléphone ne montre pas ses points (ils la trahiraient).
+- **Pas de tâche planifiée** : une question dont le temps est écoulé se ferme à la première lecture de l'état (`Animation::actualiser`). Elle se ferme aussi dès que tous les présents ont répondu.
+- **Temps réel par interrogation régulière**, toutes les secondes, avec la dernière `version` connue : si rien n'a bougé, le serveur répond `{version, inchange}`. Fonctionne sur un hébergement mutualisé, sans service externe. Tout le transport est dans `resources/js/lib/direct.js` : passer à Pusher (ou Reverb sur un VPS) = remplacer cette seule fonction et diffuser les changements de `version` côté serveur. Onglet caché : l'interrogation s'arrête.
+- **Limite de débit par joueur, pas par IP** : une classe entière partage souvent la même adresse. Pas non plus par identifiant de session : un client sans cookie en change à chaque requête et échappait à la limite (trouvé par un test). Plafond large par IP en plus.
+- L'animateur peut **retirer un pseudo** (projeté au tableau, un pseudo déplacé se voit de tous). 60 joueurs au plus par salle.
+- Une salle sans activité depuis 6 h est fermée ; son code peut resservir. Choix mélangés de façon stable (`Jeu\Melange`) : téléphone et grand écran montrent les mêmes symboles aux mêmes places.
+- Symboles des réponses tracés au feutre (triangle, rond, carré, étoile) + couleur + texte : jamais la couleur seule. 4 choix au plus en direct.
+- QR code : `uqr`, chargé à la demande sur le grand écran seulement.
+
 ## Contenu
 
 `database/seeders/contenu/*.php` : une matière par fichier, **le premier choix de chaque question est le bon** (mélangé à l'affichage). `ContenuSeeder` met à jour par slug et peut tourner en production ; il ne remplace jamais les questions d'un quiz déjà joué (la suppression effacerait les réponses en cascade). Chaque question a 4 choix, une explication et un indice : un test le vérifie. **Aucun chiffre ni fait sans être sûr** : une phrase non vérifiée (« popularisée par Baudelaire ») a été retirée.
@@ -65,6 +78,6 @@ Vérifier le rendu à 375 et 1280 px, en clair et en sombre, sans débordement h
 ## Feuille de route
 
 1. **Fait** : socle, mode solo complet (matières, partie, correction, copie, À revoir, bulletin, gommettes, série de jours), comptes.
-2. Mode en direct : code de partie, téléphone-manette, grand écran de l'animateur, palmarès. Temps réel : l'hébergement mutualisé ne peut pas faire tourner Reverb ; piste retenue, un service hébergé (Pusher) derrière une interface, limites de l'offre gratuite à vérifier.
+2. **Fait** : mode en direct (voir plus haut). À envisager : Pusher si l'interrogation régulière devient trop lourde pour l'hébergement (au-delà de quelques dizaines de joueurs), limites de l'offre gratuite à vérifier.
 3. L'atelier : création de quiz assistée par IA, propositions « au crayon » (graphite) à repasser « à l'encre » après relecture. Rien n'est publié sans relecture.
 4. Mot de passe oublié (demande un envoi d'emails configuré), images de partage, administration.
