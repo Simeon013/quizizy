@@ -7,9 +7,11 @@ import { Head, Link, router } from '@inertiajs/vue3';
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import ChoixReponse from '../composants/ChoixReponse.vue';
 import Crayon from '../composants/Crayon.vue';
+import Ecrit from '../composants/Ecrit.vue';
 import Gribouille from '../composants/Gribouille.vue';
 import Regle from '../composants/Regle.vue';
 import { envoyer } from '../lib/http';
+import { page as tournerPage } from '../lib/sons';
 
 const props = defineProps({
     partie: { type: Object, required: true },
@@ -85,6 +87,7 @@ async function suivante() {
     try {
         const { question: q } = await envoyer(url('question'));
         if (!q) return router.visit(url('copie'));
+        tournerPage();
         question.value = q;
         correction.value = null;
         choisi.value = null;
@@ -212,8 +215,8 @@ const noteVerte = computed(() => {
                     </div>
 
                     <div class="marge" aria-live="polite">
-                        <p v-if="noteRouge" class="note-rouge">{{ noteRouge }}</p>
-                        <p v-if="noteVerte" class="note-verte">{{ noteVerte }}</p>
+                        <Ecrit v-if="noteRouge" :key="`r${question.id}`" :texte="noteRouge" class="note-rouge" :delai="500" :duree="700" />
+                        <Ecrit v-if="noteVerte" :key="`v${question.id}`" :texte="noteVerte" class="note-verte" :delai="noteRouge ? 1300 : 1000" />
                         <p v-if="erreur" class="note-rouge" role="alert">{{ erreur }}</p>
                     </div>
 

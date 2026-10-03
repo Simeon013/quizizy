@@ -12,9 +12,10 @@ export const YEUX = {
         [52, 31],
         [70, 30],
     ],
+    // Sur le « ! », les yeux débordent de chaque côté du trait : posés dessus, ils disparaissaient.
     e: [
-        [54, 30],
-        [68, 30],
+        [52, 27],
+        [70, 27],
     ],
 };
 
@@ -32,10 +33,10 @@ export function yeux(t) {
 /** Les poses : forme (q ou e), yeux, regard, inclinaison, accessoires. */
 export const POSES = {
     curieux: { forme: 'q', yeux: 'ouverts', regard: [1, -2] },
-    eureka: { forme: 'e', yeux: 'rieurs', extra: ['eclat'] },
+    eureka: { forme: 'e', yeux: 'rieurs', bouche: 'sourire', extra: ['eclat'] },
     reflechit: { forme: 'q', yeux: 'ouverts', regard: [-2, -2], penche: -8, extra: ['crayon'] },
     oups: { forme: 'q', yeux: 'inquiets', regard: [0, 2], penche: 8, extra: ['vert'] },
-    bravo: { forme: 'e', yeux: 'grands', regard: [0, 0], extra: ['confettis', 'surligne'] },
+    bravo: { forme: 'e', yeux: 'grands', regard: [0, 0], bouche: 'sourire', extra: ['confettis', 'surligne'] },
     dodo: { forme: 'q', yeux: 'fermes', penche: 14, extra: ['dodo'] },
     presse: { forme: 'q', yeux: 'grands', regard: [2, 0], penche: -4, extra: ['goutte'] },
 };

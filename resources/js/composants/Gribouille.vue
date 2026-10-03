@@ -64,28 +64,28 @@ const extras = computed(() => new Set(fiche.value.extra ?? []));
             <path :d="chemin" class="g-trait" stroke-width="13" />
             <circle cx="61" cy="110" r="9" fill="var(--encre)" />
             <g class="g-yeux">
+                <!-- Chaque œil a toujours son blanc : un trait d'encre posé sur le corps d'encre ne se voyait pas. -->
                 <template v-for="(p, i) in positionsYeux" :key="i">
+                    <circle :cx="p[0]" :cy="p[1]" :r="yeuxVisibles === 'grands' ? 7.5 : 6.6" fill="var(--carte)" stroke="var(--encre)" stroke-width="2.6" />
                     <path
                         v-if="yeuxVisibles === 'rieurs'"
-                        :d="`M${p[0] - 5} ${p[1] + 2} Q${p[0]} ${p[1] - 5} ${p[0] + 5} ${p[1] + 2}`"
+                        :d="`M${p[0] - 3.6} ${p[1] + 1.6} Q${p[0]} ${p[1] - 3.6} ${p[0] + 3.6} ${p[1] + 1.6}`"
                         class="g-trait"
-                        stroke-width="3"
+                        stroke-width="2.4"
                     />
                     <path
                         v-else-if="yeuxVisibles === 'fermes'"
-                        :d="`M${p[0] - 5} ${p[1] + 1} Q${p[0]} ${p[1] + 4} ${p[0] + 5} ${p[1] + 1}`"
+                        :d="`M${p[0] - 3.8} ${p[1]} Q${p[0]} ${p[1] + 3} ${p[0] + 3.8} ${p[1]}`"
                         class="g-trait"
-                        stroke-width="2.6"
+                        stroke-width="2.2"
                     />
-                    <template v-else>
-                        <circle :cx="p[0]" :cy="p[1]" :r="yeuxVisibles === 'grands' ? 7.5 : 6.2" fill="var(--carte)" stroke="var(--encre)" stroke-width="2.6" />
-                        <circle
-                            :cx="p[0] + regard[0]"
-                            :cy="p[1] + regard[1]"
-                            :r="yeuxVisibles === 'grands' ? 2.4 : 2.7"
-                            fill="var(--encre)"
-                        />
-                    </template>
+                    <circle
+                        v-else
+                        :cx="p[0] + regard[0]"
+                        :cy="p[1] + regard[1]"
+                        :r="yeuxVisibles === 'grands' ? 2.4 : 2.7"
+                        fill="var(--encre)"
+                    />
                 </template>
                 <path
                     v-if="yeuxVisibles === 'inquiets'"
@@ -94,6 +94,8 @@ const extras = computed(() => new Set(fiche.value.extra ?? []));
                     stroke-width="2.6"
                 />
             </g>
+            <!-- Sourire tracé en blanc sur le trait du « ! ». -->
+            <path v-if="fiche.bouche === 'sourire' && t > 0.8" d="M56 40 Q61 46 66 40" fill="none" stroke="var(--carte)" stroke-width="2.6" stroke-linecap="round" />
         </g>
         <path v-if="extras.has('eclat')" d="M96 18 l10 -8 M100 32 h12 M22 18 l-10 -8 M18 32 h-12" stroke="var(--rouge)" stroke-width="3" stroke-linecap="round" fill="none" />
         <g v-if="extras.has('crayon')">

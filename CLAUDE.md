@@ -94,6 +94,19 @@ Choisie parmi trois directions (Plateau, Carnet, Wax). Référence complète : `
 - **Deux thèmes** : le cahier (clair) et le cahier de nuit (sombre), mêmes rôles. Suit l'appareil, bouton pour choisir (`eureka:theme`, posé avant le premier rendu dans `app.blade.php`).
 - Ton : on tutoie le joueur, on n'emploie jamais un mot de reproche.
 
+### Le papier, pour de vrai (3 octobre 2026)
+
+Retour de Siméon : la DA papier était « trop timide », il manquait la sensation de travailler sur du vrai papier. D'où :
+
+- **Tracés à main levée, jamais identiques** : `composants/Trace.vue` (cercle, rature, barre, coche, souligne, surligne), géométrie tirée au hasard à chaque affichage dans `lib/main-levee.js` (Rough.js, `RoughGenerator` seul). Dessinés trait par trait (Web Animations, vitesse en px/ms par geste), `parLigne` pour ne couvrir que les lignes écrites. Ne pas revenir à des chemins SVG figés.
+- **On rature, on ne barre pas** : gribouillis serré mais léger (opacité ~0,6, trait fin), réglé pour que le mot reste lisible. Ne pas l'épaissir.
+- **Sons synthétisés** (`lib/sons.js`, Web Audio, aucun fichier) : crayon qui gratte pendant chaque tracé et chaque note écrite, page qui tourne (question suivante), tampon (copie), gomme (recommencer). Coupables par le bouton haut-parleur (`BoutonSon`, `eureka:son`). Aucun son avec « mouvement réduit », ni dans le corrigé de la copie (trop de tracés à la suite).
+- **Les notes s'écrivent** (`composants/Ecrit.vue`) : lettre après lettre, hésitations entre les mots ; chaque lettre est déjà à sa place (rien ne bouge), texte entier pour les lecteurs d'écran.
+- **Rien n'est aligné au cordeau** (`lib/papier.js`) : feuilles, post-it, choix, tuiles et boutons reçoivent à l'apparition une inclinaison et des coins au hasard (`rotate` et `border-radius` en ligne, qui ne gênent pas les `transform` des animations). L'angle diminue avec la taille pour ne jamais déborder à 375 px.
+- **Grain du papier** : bruit fractal SVG en data URI (`--grain`), sur le fond, les feuilles et les post-it, plus clair la nuit.
+- La coche du joueur est à **l'encre** : le rouge reste au correcteur.
+- Gribouille en « ! » : les yeux (blanc + pupille) débordent du trait, sinon ils disparaissaient.
+
 Vérifier le rendu à 375 et 1280 px, en clair et en sombre, sans débordement horizontal.
 
 ## Feuille de route

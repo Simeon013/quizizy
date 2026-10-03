@@ -1,6 +1,7 @@
 <script setup>
 import { Link, router, usePage } from '@inertiajs/vue3';
 import { computed, ref, watch } from 'vue';
+import BoutonSon from './BoutonSon.vue';
 import BoutonTheme from './BoutonTheme.vue';
 import Logo from './Logo.vue';
 
@@ -47,6 +48,7 @@ const deconnecter = () => router.post('/deconnexion');
                 </template>
             </nav>
             <div class="entete-outils">
+                <BoutonSon />
                 <BoutonTheme />
                 <button
                     type="button"

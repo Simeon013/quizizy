@@ -5,6 +5,7 @@
  * sur le grand écran, une barre hachurée montre combien l'ont choisie.
  */
 import Symbole from './Symbole.vue';
+import Trace from './Trace.vue';
 
 defineProps({
     symbole: { type: String, required: true },
@@ -39,9 +40,7 @@ const COULEURS = { triangle: '#8CC8FF', rond: '#FFB4A2', carre: '#B9F5C9', etoil
             <span class="tuile-barre" :style="{ width: `${sur ? Math.round((compte / sur) * 100) : 0}%` }"></span>
             <span class="tuile-nombre chiffres">{{ compte }}</span>
         </span>
-        <svg v-if="etat === 'juste'" class="tuile-cercle" viewBox="0 0 200 60" preserveAspectRatio="none" aria-hidden="true">
-            <path class="trace" style="--longueur: 520" d="M34 6 C-12 12 0 58 64 55 C150 59 210 46 194 16 C182 -2 92 0 30 12" />
-        </svg>
+        <Trace v-if="etat === 'juste'" type="cercle" couleur="#c92a25" :delai="250" />
     </component>
 </template>
 
@@ -118,20 +117,6 @@ const COULEURS = { triangle: '#8CC8FF', rond: '#FFB4A2', carre: '#B9F5C9', etoil
 .tuile-choisie.tuile-neutre {
     outline: 4px dashed var(--encre);
     outline-offset: 3px;
-}
-.tuile-cercle {
-    position: absolute;
-    inset: -10px -12px;
-    width: calc(100% + 24px);
-    height: calc(100% + 20px);
-    pointer-events: none;
-    overflow: visible;
-}
-.tuile-cercle path {
-    fill: none;
-    stroke: #c92a25;
-    stroke-width: 3.5;
-    stroke-linecap: round;
 }
 .visually-hidden {
     position: absolute;

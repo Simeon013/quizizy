@@ -5,6 +5,7 @@
  */
 import { Head, Link } from '@inertiajs/vue3';
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import BoutonSon from '../../composants/BoutonSon.vue';
 import BoutonTheme from '../../composants/BoutonTheme.vue';
 import Crayon from '../../composants/Crayon.vue';
 import Gribouille from '../../composants/Gribouille.vue';
@@ -107,6 +108,7 @@ const pose = computed(() => {
                 <strong>{{ etat.moi.pseudo }}</strong>
                 <span v-if="etat.moi.points !== null" class="chiffres">{{ etat.moi.points.toLocaleString('fr-FR') }} pts</span>
             </div>
+            <BoutonSon />
             <BoutonTheme />
         </header>
 

@@ -29,6 +29,8 @@
     --ombre: #1e2b5c;
     --postit: #fff27a;
     --encre-fixe: #1e2b5c; /* texte posé sur une couleur fixe (onglet, post-it, gommette) */
+    /* Le grain du papier : un bruit fractal très léger, dessiné par le navigateur (aucune image). */
+    --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .12 0 0 0 0 .17 0 0 0 0 .36 0 0 0 .16 -.03'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E");
     color-scheme: light;
 }
 
@@ -45,6 +47,7 @@
         --surligne: rgb(243 255 61 / 0.3);
         --couverture: #3552c4;
         --ombre: #050817;
+        --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .9 0 0 0 0 .93 0 0 0 0 1 0 0 0 .1 -.02'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E");
         color-scheme: dark;
     }
 }
@@ -61,6 +64,7 @@
     --surligne: rgb(243 255 61 / 0.3);
     --couverture: #3552c4;
     --ombre: #050817;
+    --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .9 0 0 0 0 .93 0 0 0 0 1 0 0 0 .1 -.02'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E");
     color-scheme: dark;
 }
 
@@ -88,9 +92,13 @@ html {
 body {
     background-color: var(--papier);
     background-image:
+        var(--grain),
         linear-gradient(var(--quadrille) 1px, transparent 1px),
         linear-gradient(90deg, var(--quadrille) 1px, transparent 1px);
-    background-size: 24px 24px;
+    background-size:
+        180px 180px,
+        24px 24px,
+        24px 24px;
     color: var(--encre);
     font-family: var(--font-sans);
     font-size: 17px;
@@ -194,9 +202,10 @@ body {
 
 /* ---------- Objets du cahier ---------- */
 
-/* Une feuille : bord tracé à main levée, ombre franche. */
+/* Une feuille : bord tracé à main levée, ombre franche, le grain du papier.
+ * Inclinaison et coins tirés au hasard à l'apparition (lib/papier.js). */
 .feuille {
-    background: var(--carte);
+    background: var(--grain) var(--carte);
     border: 2px solid var(--encre);
     border-radius: 10px 14px 9px 13px / 13px 9px 14px 10px;
     box-shadow: 5px 5px 0 var(--ombre);
@@ -254,7 +263,7 @@ body {
 
 /* Le post-it : indices, messages, invitations. */
 .postit {
-    background: var(--postit);
+    background: var(--grain) var(--postit);
     color: var(--encre-fixe);
     font-family: var(--font-main);
     font-weight: 700;
@@ -339,17 +348,7 @@ textarea.champ:focus {
     }
 }
 
-/* Tracés au stylo (cercle, rature, coche) : dessinés trait par trait. */
-.trace {
-    stroke-dasharray: var(--longueur, 600);
-    stroke-dashoffset: var(--longueur, 600);
-    animation: tracer 0.7s ease-out forwards;
-}
-@keyframes tracer {
-    to {
-        stroke-dashoffset: 0;
-    }
-}
+/* Tracés au stylo (cercle, rature, coche, surligneur) : composants/Trace.vue. */
 
 @keyframes flotter {
     50% {
@@ -374,8 +373,5 @@ textarea.champ:focus {
     }
     .surligne-anime::after {
         transform: skew(-8deg) scaleX(1);
-    }
-    .trace {
-        stroke-dashoffset: 0;
     }
 }

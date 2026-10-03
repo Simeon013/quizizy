@@ -6,6 +6,8 @@ import ChoixReponse from '../composants/ChoixReponse.vue';
 import Gommette from '../composants/Gommette.vue';
 import Gribouille from '../composants/Gribouille.vue';
 import Tampon from '../composants/Tampon.vue';
+import Ecrit from '../composants/Ecrit.vue';
+import { tampon } from '../lib/sons';
 
 const props = defineProps({
     partie: { type: Object, required: true },
@@ -32,6 +34,8 @@ const erreurs = computed(() => props.questions.filter((q) => !q.juste).length);
 const rejouer = () => router.post(`/quiz/${props.partie.quiz}/parties`);
 
 onMounted(async () => {
+    // Le tampon touche la feuille 0,4 s + l'élan après l'arrivée sur la page.
+    if (!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) tampon(0.75);
     if (ratio.value < 0.8 || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
     const { default: confettis } = await import('canvas-confetti');
     confettis({
@@ -56,7 +60,7 @@ const etat = (c) => (c.juste ? 'juste' : 'fausse');
                 <p class="copie-note chiffres">
                     {{ partie.bonnes }}<small>/{{ partie.total }}</small>
                 </p>
-                <p class="note-verte copie-mot">{{ mot }}</p>
+                <Ecrit :texte="mot" class="note-verte copie-mot" :delai="1100" />
                 <dl class="copie-stats">
                     <div><dt>Points</dt><dd class="chiffres">{{ partie.points.toLocaleString('fr-FR') }}</dd></div>
                     <div><dt>Série la plus longue</dt><dd class="chiffres">{{ partie.serieMax }}</dd></div>
@@ -103,7 +107,7 @@ const etat = (c) => (c.juste ? 'juste' : 'fausse');
                         </span>
                     </div>
                     <div class="corrige-choix">
-                        <ChoixReponse v-for="(c, j) in q.choix" :key="j" :texte="c.texte" :etat="etat(c)" :choisi="c.choisi" desactive />
+                        <ChoixReponse v-for="(c, j) in q.choix" :key="j" :texte="c.texte" :etat="etat(c)" :choisi="c.choisi" desactive au-visible :son="false" />
                     </div>
                     <p class="note-verte">{{ q.explication }}</p>
                 </li>

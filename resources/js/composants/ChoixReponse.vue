@@ -1,15 +1,20 @@
 <script setup>
 /**
  * Un choix de réponse, corrigé au stylo : la bonne réponse est surlignée et
- * entourée en rouge, la réponse fausse choisie est barrée, la case cochée.
- * L'état ne repose jamais sur la couleur seule.
+ * entourée en rouge, la réponse fausse choisie est raturée (sans cacher ce
+ * qu'on avait écrit), la case cochée à la main. Tracés tirés au hasard : pas
+ * deux corrections pareilles. L'état ne repose jamais sur la couleur seule.
  */
+import Trace from './Trace.vue';
+
 defineProps({
     texte: { type: String, required: true },
     touche: { type: String, default: '' },
     etat: { type: String, default: 'neutre' }, // neutre | juste | fausse
     choisi: { type: Boolean, default: false },
     desactive: { type: Boolean, default: false },
+    son: { type: Boolean, default: true },
+    auVisible: { type: Boolean, default: false }, // corrigé : le stylo passe quand on arrive dessus
 });
 defineEmits(['choisir']);
 </script>
@@ -24,20 +29,17 @@ defineEmits(['choisir']);
         @click="$emit('choisir')"
     >
         <span class="case" aria-hidden="true">
-            <svg v-if="choisi" viewBox="0 0 34 34">
-                <path class="trace" style="--longueur: 60" d="M6 18 L14 26 L30 4" />
-            </svg>
+            <Trace v-if="choisi" type="coche" couleur="var(--encre)" :son="son" :au-visible="auVisible" />
         </span>
-        <span class="texte">{{ texte }}</span>
+        <span class="texte">
+            {{ texte }}
+            <Trace v-if="etat === 'fausse' && choisi" type="rature" par-ligne :son="son" :au-visible="auVisible" :delai="150" />
+            <Trace v-if="etat === 'juste'" type="surligne" couleur="var(--surligne)" par-ligne :son="son" :au-visible="auVisible" :delai="choisi ? 200 : 650" />
+        </span>
         <span v-if="touche && etat === 'neutre'" class="touche" aria-hidden="true">{{ touche }}</span>
         <span v-if="etat === 'juste'" class="visually-hidden"> (bonne réponse)</span>
         <span v-else-if="etat === 'fausse' && choisi" class="visually-hidden"> (ta réponse, fausse)</span>
-        <svg v-if="etat === 'juste'" class="marque" viewBox="0 0 200 60" preserveAspectRatio="none" aria-hidden="true">
-            <path class="trace" style="--longueur: 520" d="M34 6 C-12 12 0 58 64 55 C150 59 210 46 194 16 C182 -2 92 0 30 12" />
-        </svg>
-        <svg v-else-if="etat === 'fausse' && choisi" class="marque" viewBox="0 0 200 60" preserveAspectRatio="none" aria-hidden="true">
-            <path class="trace" style="--longueur: 200" d="M8 36 Q100 20 192 30" />
-        </svg>
+        <Trace v-if="etat === 'juste'" type="cercle" :son="son" :au-visible="auVisible" :delai="choisi ? 550 : 1000" />
     </button>
 </template>
 
@@ -63,12 +65,6 @@ defineEmits(['choisir']);
         box-shadow 0.15s,
         opacity 0.3s;
 }
-.choix:nth-child(2) {
-    transform: rotate(0.5deg);
-}
-.choix:nth-child(3) {
-    transform: rotate(-0.4deg);
-}
 .choix:not([disabled]):hover {
     box-shadow: 5px 5px 0 var(--ombre);
     transform: translate(-1px, -1px);
@@ -84,24 +80,9 @@ defineEmits(['choisir']);
     border: 2px solid var(--encre);
     border-radius: 4px;
 }
-.case svg {
-    position: absolute;
-    inset: -9px -7px -4px -4px;
-    width: 36px;
-    height: 36px;
-    overflow: visible;
-}
-.case path {
-    fill: none;
-    stroke: var(--rouge);
-    stroke-width: 3.5;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-}
-.choix-juste .case path {
-    stroke: var(--vert);
-}
 .texte {
+    position: relative;
+    isolation: isolate;
     flex: 1;
     min-width: 0;
     overflow-wrap: anywhere;
@@ -118,24 +99,7 @@ defineEmits(['choisir']);
         display: none;
     }
 }
-.marque {
-    position: absolute;
-    inset: -8px -10px;
-    width: calc(100% + 20px);
-    height: calc(100% + 16px);
-    pointer-events: none;
-    overflow: visible;
-}
-.marque path {
-    fill: none;
-    stroke: var(--rouge);
-    stroke-width: 3;
-    stroke-linecap: round;
-}
 .choix-juste {
-    background:
-        linear-gradient(transparent 14%, var(--surligne) 14%, var(--surligne) 88%, transparent 88%),
-        var(--carte);
     opacity: 1;
 }
 .choix-fausse {

@@ -3,6 +3,8 @@
 import { Head, Link, usePage } from '@inertiajs/vue3';
 import { computed, onMounted, ref } from 'vue';
 import ChoixReponse from '../composants/ChoixReponse.vue';
+import Ecrit from '../composants/Ecrit.vue';
+import { gomme } from '../lib/sons';
 import Gommette from '../composants/Gommette.vue';
 import Gribouille from '../composants/Gribouille.vue';
 import Regle from '../composants/Regle.vue';
@@ -28,7 +30,10 @@ const essai = {
 const choisi = ref(null);
 const etat = (i) => (choisi.value === null ? 'neutre' : i === essai.juste ? 'juste' : 'fausse');
 const poseEssai = computed(() => (choisi.value === null ? 'curieux' : choisi.value === essai.juste ? 'eureka' : 'oups'));
-const recommencer = () => (choisi.value = null);
+const recommencer = () => {
+    gomme();
+    choisi.value = null;
+};
 
 const etapes = [
     { titre: 'Choisis une matière', texte: 'Sciences, histoire, géographie… chaque matière a son intercalaire et ses quiz.' },
@@ -78,8 +83,8 @@ const etapes = [
                 />
             </div>
             <div v-if="choisi !== null" class="essai-notes" aria-live="polite">
-                <p v-if="choisi !== essai.juste" class="note-rouge">« {{ essai.choix[choisi] }} » : raté.</p>
-                <p class="note-verte">{{ choisi === essai.juste ? 'Bien vu !' : 'Pas grave !' }} {{ essai.explication }}</p>
+                <Ecrit v-if="choisi !== essai.juste" :texte="`« ${essai.choix[choisi]} » : raté.`" class="note-rouge" :delai="500" :duree="700" />
+                <Ecrit :texte="`${choisi === essai.juste ? 'Bien vu !' : 'Pas grave !'} ${essai.explication}`" class="note-verte" :delai="choisi !== essai.juste ? 1300 : 1000" />
                 <button type="button" class="btn btn-discret" @click="recommencer">Gommer et recommencer</button>
             </div>
         </div>
